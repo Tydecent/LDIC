@@ -26,10 +26,12 @@
             <tbody></tbody>
         </table>
 
+        <div id="summaryStats" style="margin-bottom: 20px; background: #e9ecef; padding: 10px; border-radius: 4px;"></div>
+
         <h3>员工信息及标注数量</h3>
         <table id="usersTable">
             <thead>
-                <tr><th>用户名</th><th>角色</th><th>标注数量</th></tr>
+                <tr><th>用户名</th><th>角色</th><th>标注数量</th><th>标注时长(秒)</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -44,6 +46,7 @@
             }
             loadAllRecords();
             loadUsers();
+            loadSummary();
         }
 
         async function loadAllRecords() {
@@ -75,6 +78,7 @@
                     <td>${escapeHtml(u.username)}</td>
                     <td>${u.role === 'admin' ? '管理员' : '标注员'}</td>
                     <td>${u.annotation_count}</td>
+                    <td>${u.total_duration_seconds.toFixed(3)}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -83,6 +87,16 @@
         async function logout() {
             await fetch('/api/logout', { method: 'POST' });
             window.location.href = '/login.html';
+        }
+
+        // 调用汇总接口并显示
+        async function loadSummary() {
+            const res = await fetch('/api/admin/summary');
+            const data = await res.json();
+            document.getElementById('summaryStats').innerHTML = `
+                📊 总标注记录数：${data.total_records} &nbsp;|&nbsp;
+                ⏱️ 总标注时长：${data.total_duration_seconds} 秒
+            `;
         }
 
         function escapeHtml(text) {

@@ -195,20 +195,41 @@ def admin_all_annotations():
 def admin_users():
     # 从数据库统计每个人的标注数量
     from sqlalchemy import func
+    # 同时统计数量与总时长（毫秒）
     stats = db.session.query(
         Annotation.username,
-        func.count(Annotation.id).label('count')
+        func.count(Annotation.id).label('count'),
+        func.sum(Annotation.duration_ms).label('total_duration_ms')
     ).group_by(Annotation.username).all()
-    count_map = {s.username: s.count for s in stats}
-
+    
+    # 构建用户统计映射
+    stat_map = {s.username: (s.count, s.total_duration_ms) for s in stats}
+    
     result = []
     for username, info in USERS.items():
+        count, total_ms = stat_map.get(username, (0, 0))
+        total_sec = round(total_ms / 1000, 3) if total_ms else 0
         result.append({
             'username': username,
             'role': info['role'],
-            'annotation_count': count_map.get(username, 0)
+            'annotation_count': count,
+            'total_duration_seconds': total_sec
         })
     return jsonify(result)
+
+# 管理员汇总接口 返回全局总记录数和总时长
+@app.route('/api/admin/summary', methods=['GET'])
+@login_required
+@admin_required
+def admin_summary():
+    from sqlalchemy import func
+    total_records = Annotation.query.count()
+    total_duration_ms = db.session.query(func.sum(Annotation.duration_ms)).scalar() or 0
+    total_duration_sec = round(total_duration_ms / 1000, 3)
+    return jsonify({
+        'total_records': total_records,
+        'total_duration_seconds': total_duration_sec
+    })
 
 # ---------- 启动 ----------
 if __name__ == '__main__':

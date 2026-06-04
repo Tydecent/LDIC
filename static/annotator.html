@@ -23,7 +23,10 @@
     <div class="container">
         <button class="logout" onclick="logout()">退出登录</button>
         <h2>标注员工作台</h2>
-        <p>你好，<strong id="usernameDisplay"></strong>！ 已标注数量：<span class="count-badge" id="totalCount">0</span></p>
+        <p>你好，<strong id="usernameDisplay"></strong>！ 
+           已标注数量：<span class="count-badge" id="totalCount">0</span>，
+           总时长：<span id="totalDuration">0</span> 秒
+        </p>
         
         <h3>添加标注</h3>
         <div class="form-row">
@@ -61,10 +64,12 @@
             const records = await res.json();
             const tbody = document.getElementById('recordsBody');
             tbody.innerHTML = '';
+            let totalDuration = 0;
             records.forEach(r => {
+                totalDuration += r.duration_seconds;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${escapeHtml(r.task_name)}</td>
+                    <td>${escapeHtml(r.task_name)}</td> 
                     <td>${r.duration_seconds.toFixed(3)}</td>
                     <td>${r.created_at}</td>
                     <td>
@@ -75,6 +80,7 @@
                 tbody.appendChild(tr);
             });
             document.getElementById('totalCount').textContent = records.length;
+            document.getElementById('totalDuration').textContent = totalDuration.toFixed(3);
         }
 
         async function addRecord() {
