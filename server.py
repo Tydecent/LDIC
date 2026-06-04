@@ -4,6 +4,10 @@ from flask import Flask, request, jsonify, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
 from functools import wraps
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from io import BytesIO
+from flask import send_file
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = 'your-secret-key-change-in-production'  # 生产环境请更换
@@ -230,6 +234,55 @@ def admin_summary():
         'total_records': total_records,
         'total_duration_seconds': total_duration_sec
     })
+
+# ---------- 导出 Excel ----------
+# 该接口返回一个 Excel 文件，包含所有标注记录，按创建时间升序排列
+@app.route('/excel', methods=['GET'])
+def export_excel():
+    # 查询所有标注记录，按创建时间升序（可自行调整排序）
+    records = Annotation.query.order_by(Annotation.created_at.asc()).all()
+    
+    # 创建工作簿和工作表
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "标注记录总表"
+    
+    # 设置表头
+    headers = ['序号', '姓名', '任务名', '时长(秒)']
+    ws.append(headers)
+    # 表头样式：加粗、居中
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+    
+    # 填充数据
+    for idx, record in enumerate(records, start=1):
+        duration_sec = round(record.duration_ms / 1000, 3)
+        ws.append([
+            idx,
+            record.username,
+            record.task_name,
+            duration_sec
+        ])
+    
+    # 调整列宽（可选）
+    ws.column_dimensions['A'].width = 8
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 50
+    ws.column_dimensions['D'].width = 12
+    
+    # 将工作簿保存到内存流
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # 返回文件下载响应
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='标注记录总表.xlsx'
+    )
 
 # ---------- 启动 ----------
 if __name__ == '__main__':
