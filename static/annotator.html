@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>标注员工作台</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f9f9f9; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2, h3 { margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        input { padding: 8px; flex: 1; }
+        button { padding: 8px 15px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        .btn-danger { background: #dc3545; }
+        .btn-warning { background: #ffc107; color: black; }
+        .logout { float: right; }
+        .count-badge { background: #007bff; color: white; padding: 3px 10px; border-radius: 12px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="logout" onclick="logout()">退出登录</button>
+        <h2>标注员工作台</h2>
+        <p>你好，<strong id="usernameDisplay"></strong>！ 已标注数量：<span class="count-badge" id="totalCount">0</span></p>
+        
+        <h3>添加标注</h3>
+        <div class="form-row">
+            <input type="text" id="taskName" placeholder="标注任务名（可粘贴超链接）">
+            <input type="number" id="durationSec" placeholder="视频时长（秒）" step="0.001" min="0.001">
+            <button onclick="addRecord()">添加</button>
+        </div>
+
+        <h3>我的标注记录</h3>
+        <table>
+            <thead>
+                <tr><th>任务名</th><th>视频时长(s)</th><th>创建时间</th><th>操作</th></tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+        </table>
+
+        <!-- 编辑用的隐藏行模板通过JS动态生成 -->
+    </div>
+
+    <script>
+        let currentUser = '';
+
+        async function checkSession() {
+            const res = await fetch('/api/session');
+            if (res.status === 401) { window.location.href = '/login.html'; return; }
+            const data = await res.json();
+            if (data.role !== 'annotator') { window.location.href = data.role === 'admin' ? '/admin.html' : '/login.html'; }
+            currentUser = data.username;
+            document.getElementById('usernameDisplay').textContent = currentUser;
+            loadRecords();
+        }
+
+        async function loadRecords() {
+            const res = await fetch('/api/annotations');
+            const records = await res.json();
+            const tbody = document.getElementById('recordsBody');
+            tbody.innerHTML = '';
+            records.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(r.task_name)}</td>
+                    <td>${r.duration_seconds.toFixed(3)}</td>
+                    <td>${r.created_at}</td>
+                    <td>
+                        <button onclick="startEdit(${r.id}, '${escapeHtml(r.task_name)}', ${r.duration_seconds})" class="btn-warning">编辑</button>
+                        <button onclick="deleteRecord(${r.id})" class="btn-danger">删除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('totalCount').textContent = records.length;
+        }
+
+        async function addRecord() {
+            const taskName = document.getElementById('taskName').value.trim();
+            const durationSec = document.getElementById('durationSec').value;
+            if (!taskName || !durationSec) { alert('请填写完整信息'); return; }
+            const res = await fetch('/api/annotations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_name: taskName, duration_seconds: parseFloat(durationSec) })
+            });
+            if (res.ok) {
+                document.getElementById('taskName').value = '';
+                document.getElementById('durationSec').value = '';
+                loadRecords();
+            } else {
+                const err = await res.json();
+                alert(err.error);
+            }
+        }
+
+        function startEdit(id, taskName, durationSec) {
+            const newTaskName = prompt('修改任务名:', taskName);
+            if (newTaskName === null) return;
+            const newDuration = prompt('修改视频时长(秒):', durationSec.toFixed(3));
+            if (newDuration === null) return;
+            updateRecord(id, newTaskName.trim(), parseFloat(newDuration));
+        }
+
+        async function updateRecord(id, taskName, durationSec) {
+            if (!taskName || isNaN(durationSec) || durationSec <= 0) { alert('输入无效'); return; }
+            const res = await fetch(`/api/annotations/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_name: taskName, duration_seconds: durationSec })
+            });
+            if (res.ok) {
+                loadRecords();
+            } else {
+                const err = await res.json();
+                alert(err.error);
+            }
+        }
+
+        async function deleteRecord(id) {
+            if (!confirm('确定要删除吗？')) return;
+            const res = await fetch(`/api/annotations/${id}`, { method: 'DELETE' });
+            if (res.ok) loadRecords();
+            else alert('删除失败');
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/login.html';
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        checkSession();
+    </script>
+</body>
+</html>

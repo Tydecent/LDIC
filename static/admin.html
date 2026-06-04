@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员面板</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f9f9f9; }
+        .container { max-width: 1100px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+        .logout { float: right; }
+        h2, h3 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="logout" onclick="logout()">退出登录</button>
+        <h2>管理员面板</h2>
+        
+        <h3>所有标注记录</h3>
+        <table id="allRecordsTable">
+            <thead>
+                <tr><th>ID</th><th>用户</th><th>任务名</th><th>视频时长(s)</th><th>创建时间</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>员工信息及标注数量</h3>
+        <table id="usersTable">
+            <thead>
+                <tr><th>用户名</th><th>角色</th><th>标注数量</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function checkAdmin() {
+            const res = await fetch('/api/session');
+            if (res.status === 401 || (await res.json()).role !== 'admin') {
+                window.location.href = '/login.html';
+                return;
+            }
+            loadAllRecords();
+            loadUsers();
+        }
+
+        async function loadAllRecords() {
+            const res = await fetch('/api/admin/annotations');
+            const records = await res.json();
+            const tbody = document.querySelector('#allRecordsTable tbody');
+            tbody.innerHTML = '';
+            records.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.id}</td>
+                    <td>${escapeHtml(r.username)}</td>
+                    <td>${escapeHtml(r.task_name)}</td>
+                    <td>${r.duration_seconds.toFixed(3)}</td>
+                    <td>${r.created_at}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadUsers() {
+            const res = await fetch('/api/admin/users');
+            const users = await res.json();
+            const tbody = document.querySelector('#usersTable tbody');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(u.username)}</td>
+                    <td>${u.role === 'admin' ? '管理员' : '标注员'}</td>
+                    <td>${u.annotation_count}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/login.html';
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        checkAdmin();
+    </script>
+</body>
+</html>
