@@ -239,39 +239,68 @@ def admin_summary():
 # 该接口返回一个 Excel 文件，包含所有标注记录，按创建时间升序排列
 @app.route('/excel', methods=['GET'])
 def export_excel():
-    # 查询所有标注记录，按创建时间升序（可自行调整排序）
+    from sqlalchemy import func
+
+    # 1. 获取所有标注记录（按创建时间升序）
     records = Annotation.query.order_by(Annotation.created_at.asc()).all()
-    
-    # 创建工作簿和工作表
+
+    # 2. 获取用户统计（完成条数、总时长毫秒）
+    stats_query = db.session.query(
+        Annotation.username,
+        func.count(Annotation.id).label('count'),
+        func.sum(Annotation.duration_ms).label('total_ms')
+    ).group_by(Annotation.username).all()
+    # 转为字典便于查找
+    stat_map = {s.username: (s.count, s.total_ms) for s in stats_query}
+
+    # 3. 创建工作簿和工作表
     wb = Workbook()
-    ws = wb.active
-    ws.title = "标注记录总表"
-    
-    # 设置表头
+    ws_details = wb.active
+    ws_details.title = "标注记录总表"
+
+    # 3.1 标注记录总表的表头
     headers = ['序号', '姓名', '任务名', '时长(秒)']
-    ws.append(headers)
-    # 表头样式：加粗、居中
-    for cell in ws[1]:
+    ws_details.append(headers)
+    for cell in ws_details[1]:
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal='center')
-    
-    # 填充数据
+
+    # 3.2 填充标注记录数据
     for idx, record in enumerate(records, start=1):
         duration_sec = round(record.duration_ms / 1000, 3)
-        ws.append([
+        ws_details.append([
             idx,
             record.username,
             record.task_name,
             duration_sec
         ])
-    
-    # 调整列宽（可选）
-    ws.column_dimensions['A'].width = 8
-    ws.column_dimensions['B'].width = 15
-    ws.column_dimensions['C'].width = 50
-    ws.column_dimensions['D'].width = 12
-    
-    # 将工作簿保存到内存流
+
+    # 3.3 调整标注记录总表的列宽
+    ws_details.column_dimensions['A'].width = 8
+    ws_details.column_dimensions['B'].width = 15
+    ws_details.column_dimensions['C'].width = 50
+    ws_details.column_dimensions['D'].width = 12
+
+    # 4. 创建第二个工作表：个人统计
+    ws_stats = wb.create_sheet("个人统计")
+    # 4.1 表头
+    ws_stats.append(['姓名', '完成条数', '完成时长(秒)'])
+    for cell in ws_stats[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+
+    # 4.2 遍历所有用户（包含零记录的用户）
+    for username, info in USERS.items():
+        count, total_ms = stat_map.get(username, (0, 0))
+        total_seconds = round(total_ms / 1000, 3) if total_ms else 0
+        ws_stats.append([username, count, total_seconds])
+
+    # 4.3 调整个人统计表的列宽
+    ws_stats.column_dimensions['A'].width = 15
+    ws_stats.column_dimensions['B'].width = 12
+    ws_stats.column_dimensions['C'].width = 15
+
+    # 5. 保存到内存流并返回
     output = BytesIO()
     wb.save(output)
     output.seek(0)
