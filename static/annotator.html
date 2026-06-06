@@ -31,7 +31,7 @@
         <h3>添加标注</h3>
         <div class="form-row">
             <input type="text" id="taskName" placeholder="标注任务名（可粘贴超链接）">
-            <input type="number" id="durationSec" placeholder="视频时长（秒）" step="0.001" min="0.001">
+            <input type="text" id="durationSec" placeholder="视频时长（秒或分:秒.毫秒，如30.500或1:30.500）">
             <button onclick="addRecord()">添加</button>
         </div>
 
@@ -87,10 +87,17 @@
             const taskName = document.getElementById('taskName').value.trim();
             const durationSec = document.getElementById('durationSec').value;
             if (!taskName || !durationSec) { alert('请填写完整信息'); return; }
+            
+            const durationValue = parseDuration(durationSec);
+            if (isNaN(durationValue) || durationValue <= 0) {
+                alert('请输入有效的时间格式（如30.500或1:30.500）');
+                return;
+            }
+            
             const res = await fetch('/api/annotations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ task_name: taskName, duration_seconds: parseFloat(durationSec) })
+                body: JSON.stringify({ task_name: taskName, duration_seconds: durationValue })
             });
             if (res.ok) {
                 document.getElementById('taskName').value = '';
@@ -105,9 +112,16 @@
         function startEdit(id, taskName, durationSec) {
             const newTaskName = prompt('修改任务名:', taskName);
             if (newTaskName === null) return;
-            const newDuration = prompt('修改视频时长(秒):', durationSec.toFixed(3));
+            const newDuration = prompt('修改视频时长(秒或分:秒.毫秒):', durationSec.toFixed(3));
             if (newDuration === null) return;
-            updateRecord(id, newTaskName.trim(), parseFloat(newDuration));
+            
+            const durationValue = parseDuration(newDuration);
+            if (isNaN(durationValue) || durationValue <= 0) {
+                alert('请输入有效的时间格式（如30.500或1:30.500）');
+                return;
+            }
+            
+            updateRecord(id, newTaskName.trim(), durationValue);
         }
 
         async function updateRecord(id, taskName, durationSec) {
@@ -140,6 +154,31 @@
         function escapeHtml(text) {
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function parseDuration(input) {
+            if (!input || input.trim() === '') return NaN;
+            
+            const trimmed = input.trim();
+            
+            // 检查是否包含冒号（分:秒.毫秒格式）
+            if (trimmed.includes(':')) {
+                const parts = trimmed.split(':');
+                if (parts.length !== 2) return NaN;
+                
+                const minutes = parseFloat(parts[0]);
+                const seconds = parseFloat(parts[1]);
+                
+                if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0) {
+                    return NaN;
+                }
+                
+                return minutes * 60 + seconds;
+            } else {
+                // 直接解析为秒数
+                const seconds = parseFloat(trimmed);
+                return isNaN(seconds) || seconds < 0 ? NaN : seconds;
+            }
         }
 
         checkSession();
