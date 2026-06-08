@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone
 from functools import wraps
 from io import BytesIO
+from sqlalchemy import text
 
 from flask import Flask, request, jsonify, session, send_from_directory, send_file
 from flask_sqlalchemy import SQLAlchemy
@@ -120,45 +121,62 @@ def validate_duration_seconds(duration_seconds):
 
 # ---------- 幂等键装饰器 ----------
 def idempotent(expire_seconds=86400):
-    """
-    幂等键装饰器 – 要求客户端在请求头中提供 Idempotency-Key。
-    如果相同的 Key 在有效期内再次请求，直接返回上次缓存的响应。
-    """
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            # 只对 POST /api/annotations 生效（创建操作）
             if request.method != 'POST' or request.path != '/api/annotations':
                 return f(*args, **kwargs)
+
             idem_key = request.headers.get('Idempotency-Key')
             if not idem_key:
                 return jsonify({'error': 'Missing Idempotency-Key header for POST request'}), 400
 
-            # 查询是否已存在
-            existing = IdempotencyKey.query.get(idem_key)
-            if existing and existing.expires_at > datetime.now(timezone.utc):
-                # 返回缓存的响应
-                app.logger.info(f"Idempotent hit: key={idem_key}")
-                return jsonify(existing.response), 200
-            elif existing:
-                # 已过期，删除旧记录
-                db.session.delete(existing)
-                db.session.commit()
+            # 基于 key 生成稳定的锁 ID（PostgreSQL advisory lock 需要 64 位整数）
+            lock_id = hash(idem_key) & 0x7FFFFFFFFFFFFFFF   # 转为正数且 < 2^63
 
-            # 执行业务逻辑
-            resp = f(*args, **kwargs)
-            # 仅当成功响应（2xx）且为 JSON 时才缓存
-            if resp.status_code == 201 and resp.is_json:
-                response_data = resp.get_json()
-                # 存入幂等键表（有效期24小时）
-                new_idem = IdempotencyKey(
-                    key=idem_key,
-                    response=response_data,
-                    expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=expire_seconds)
+            # 尝试获取 advisory lock，非阻塞
+            try:
+                locked = db.session.execute(
+                    text("SELECT pg_try_advisory_lock(:lock_id)"),
+                    {"lock_id": lock_id}
+                ).scalar()
+            except Exception:
+                # 锁获取失败时降级处理：直接走原有逻辑（可能仍有竞态，但概率低）
+                locked = True
+
+            if not locked:
+                # 另一个请求正在处理相同 key，让客户端稍后重试
+                return jsonify({'error': 'Another request with same Idempotency-Key is being processed, please retry'}), 429
+
+            try:
+                # ----- 原有幂等键查询与过期清理逻辑 -----
+                existing = IdempotencyKey.query.get(idem_key)
+                if existing and existing.expires_at > datetime.now(timezone.utc):
+                    return jsonify(existing.response), 200
+                elif existing:
+                    db.session.delete(existing)
+                    db.session.commit()
+
+                # ----- 执行业务逻辑 -----
+                resp = f(*args, **kwargs)
+
+                # 缓存成功响应
+                if resp.status_code == 201 and resp.is_json:
+                    response_data = resp.get_json()
+                    new_idem = IdempotencyKey(
+                        key=idem_key,
+                        response=response_data,
+                        expires_at=datetime.now(timezone.utc) + timedelta(seconds=expire_seconds)
+                    )
+                    db.session.add(new_idem)
+                    db.session.commit()
+                return resp
+            finally:
+                # 释放 advisory lock
+                db.session.execute(
+                    text("SELECT pg_advisory_unlock(:lock_id)"),
+                    {"lock_id": lock_id}
                 )
-                db.session.add(new_idem)
-                db.session.commit()
-            return resp
         return wrapped
     return decorator
 
