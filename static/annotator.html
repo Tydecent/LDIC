@@ -1,187 +1,601 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>标注员工作台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>标注工作台 | 视频标注系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { font-family: Arial; margin: 20px; background: #f9f9f9; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h2, h3 { margin-top: 0; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #f2f2f2; }
-        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        input { padding: 8px; flex: 1; }
-        button { padding: 8px 15px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-        .btn-danger { background: #dc3545; }
-        .btn-warning { background: #ffc107; color: black; }
-        .logout { float: right; }
-        .count-badge { background: #007bff; color: white; padding: 3px 10px; border-radius: 12px; font-size: 14px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 20% 30%, #0b1120, #030712);
+            color: #eef2ff;
+            padding: 28px 24px;
+            min-height: 100vh;
+        }
+
+        .annotator-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            background: rgba(18, 25, 45, 0.7);
+            backdrop-filter: blur(16px);
+            border-radius: 2rem;
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, #a5f3fc, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .badge-annotator {
+            background: #3b82f6;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .logout-btn {
+            background: #334155;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 2rem;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .logout-btn:hover {
+            background: #ef4444;
+            transform: scale(0.96);
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 1.8rem;
+            padding: 1.2rem 1.8rem;
+            flex: 1;
+            min-width: 180px;
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            transition: 0.2s;
+        }
+        .stat-card h4 {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(145deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* 添加表单区 */
+        .form-card {
+            background: rgba(12, 20, 35, 0.8);
+            backdrop-filter: blur(12px);
+            border-radius: 1.8rem;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #2d3a5e;
+        }
+        .form-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: flex-end;
+        }
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+        .input-group input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 10px 14px;
+            border-radius: 1.2rem;
+            color: white;
+            font-family: 'Inter', monospace;
+            transition: 0.2s;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
+        }
+        .btn-primary {
+            background: linear-gradient(95deg, #3b82f6, #6366f1);
+            border: none;
+            padding: 10px 28px;
+            border-radius: 2rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        /* 表格区域 */
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 1.5rem;
+            background: rgba(18, 25, 45, 0.5);
+            backdrop-filter: blur(4px);
+            border: 1px solid #1e293b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            background: #0f172a;
+            color: #cbd5e6;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #1e293b;
+            color: #e2e8f0;
+        }
+        tr:hover td {
+            background: #1e293b50;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: 0.2s;
+            padding: 4px;
+        }
+        .icon-btn.edit:hover {
+            color: #3b82f6;
+            transform: scale(1.1);
+        }
+        .icon-btn.delete:hover {
+            color: #ef4444;
+            transform: scale(1.1);
+        }
+
+        /* 消息提示 */
+        .toast-message {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e293b;
+            border-left: 5px solid;
+            padding: 12px 20px;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: fadeInUp 0.2s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .empty-row td {
+            text-align: center;
+            padding: 2rem;
+            color: #9ca3af;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <button class="logout" onclick="logout()">退出登录</button>
-        <h2>标注员工作台</h2>
-        <p>你好，<strong id="usernameDisplay"></strong>！ 
-           已标注数量：<span class="count-badge" id="totalCount">0</span>，
-           总时长：<span id="totalDuration">0</span> 秒
-        </p>
-        
-        <h3>添加标注</h3>
-        <div class="form-row">
-            <input type="text" id="taskName" placeholder="标注任务名（可粘贴超链接）">
-            <input type="text" id="durationSec" placeholder="视频时长（秒或分:秒.毫秒，如30.500或1:30.500）">
-            <button onclick="addRecord()">添加</button>
+<div class="annotator-container">
+    <!-- 顶部栏 -->
+    <div class="top-nav">
+        <div class="brand"><i class="fas fa-pen-ruler"></i> 标注工作台 · 个人空间</div>
+        <div class="user-info">
+            <span id="annotatorUsername"><i class="fas fa-user-check"></i> 加载中...</span>
+            <span class="badge-annotator">标注员</span>
+            <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</button>
         </div>
-
-        <h3>我的标注记录</h3>
-        <table>
-            <thead>
-                <tr><th>任务名</th><th>视频时长(s)</th><th>创建时间</th><th>操作</th></tr>
-            </thead>
-            <tbody id="recordsBody"></tbody>
-        </table>
-
-        <!-- 编辑用的隐藏行模板通过JS动态生成 -->
     </div>
 
-    <script>
-        let currentUser = '';
+    <!-- 统计卡片区 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h4><i class="fas fa-list-check"></i> 我的标注记录数</h4>
+            <div class="stat-number" id="myCountStat">--</div>
+        </div>
+        <div class="stat-card">
+            <h4><i class="fas fa-hourglass-half"></i> 总标注时长 (秒)</h4>
+            <div class="stat-number" id="totalDurationStat">--</div>
+        </div>
+    </div>
 
-        async function checkSession() {
-            const res = await fetch('/api/session');
-            if (res.status === 401) { window.location.href = '/login.html'; return; }
-            const data = await res.json();
-            if (data.role !== 'annotator') { window.location.href = data.role === 'admin' ? '/admin.html' : '/login.html'; }
-            currentUser = data.username;
-            document.getElementById('usernameDisplay').textContent = currentUser;
-            loadRecords();
+    <!-- 新增标注记录表单 -->
+    <div class="form-card">
+        <div class="form-title"><i class="fas fa-plus-circle"></i> 新增标注记录</div>
+        <div class="form-row">
+            <div class="input-group">
+                <label><i class="fas fa-tag"></i> 任务名称</label>
+                <input type="text" id="taskNameInput" placeholder="例: 车辆识别 / 语义分割" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-stopwatch"></i> 耗时 (秒) · 正数 ≤ 86400</label>
+                <input type="number" id="durationInput" step="0.01" placeholder="例如 12.5">
+            </div>
+            <button id="createRecordBtn" class="btn-primary"><i class="fas fa-save"></i> 创建记录</button>
+        </div>
+    </div>
+
+    <!-- 我的标注记录列表 -->
+    <div class="section-title"><i class="fas fa-table-list"></i> 我的标注记录</div>
+    <div class="table-wrapper">
+        <table id="annotationsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>任务名称</th>
+                    <th>时长 (秒)</th>
+                    <th>创建时间</th>
+                    <th>版本号</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr class="empty-row"><td colspan="6">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // ====================== 配置 ======================
+    // API基地址 (与后端同域则留空，跨域需指定)
+    const BASE_URL = (() => {
+        if (window.location.origin === 'file://') return 'http://localhost:5000';
+        return '';   // 同域部署使用相对路径
+    })();
+
+    // ====================== 全局工具函数 ======================
+    function showToast(message, type = 'info', duration = 4000) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-message';
+        let iconHtml = '<i class="fas fa-info-circle"></i>';
+        if (type === 'success') iconHtml = '<i class="fas fa-check-circle"></i>';
+        if (type === 'error') iconHtml = '<i class="fas fa-circle-exclamation"></i>';
+        if (type === 'warning') iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
+        toast.innerHTML = `${iconHtml} <span>${message}</span>`;
+        toast.style.borderLeftColor = type === 'success' ? '#4ade80' : (type === 'error' ? '#f87171' : '#3b82f6');
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), duration);
+    }
+
+    // 封装fetch，自动处理401未登录
+    async function authFetch(url, options = {}) {
+        const fullUrl = BASE_URL + url;
+        const response = await fetch(fullUrl, {
+            ...options,
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...options.headers }
+        });
+        if (response.status === 401) {
+            showToast('登录已过期，请重新登录', 'error');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            throw new Error('Unauthorized');
         }
+        return response;
+    }
 
-        async function loadRecords() {
-            const res = await fetch('/api/annotations');
-            const records = await res.json();
-            const tbody = document.getElementById('recordsBody');
-            tbody.innerHTML = '';
-            let totalDuration = 0;
-            records.forEach(r => {
-                totalDuration += r.duration_seconds;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${escapeHtml(r.task_name)}</td> 
-                    <td>${r.duration_seconds.toFixed(3)}</td>
-                    <td>${r.created_at}</td>
-                    <td>
-                        <button onclick="startEdit(${r.id}, '${escapeHtml(r.task_name)}', ${r.duration_seconds})" class="btn-warning">编辑</button>
-                        <button onclick="deleteRecord(${r.id})" class="btn-danger">删除</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            document.getElementById('totalCount').textContent = records.length;
-            document.getElementById('totalDuration').textContent = totalDuration.toFixed(3);
-        }
-
-        async function addRecord() {
-            const taskName = document.getElementById('taskName').value.trim();
-            const durationSec = document.getElementById('durationSec').value;
-            if (!taskName || !durationSec) { alert('请填写完整信息'); return; }
-            
-            const durationValue = parseDuration(durationSec);
-            if (isNaN(durationValue) || durationValue <= 0) {
-                alert('请输入有效的时间格式（如30.500或1:30.500）');
-                return;
+    // 获取当前会话并校验角色
+    async function checkSessionAndRole() {
+        try {
+            const resp = await fetch(`${BASE_URL}/api/session`, { credentials: 'include' });
+            if (!resp.ok) throw new Error('No session');
+            const data = await resp.json();
+            if (!data.username) throw new Error('Not logged in');
+            if (data.role !== 'annotator') {
+                showToast('当前账号非标注员，将跳转至管理员界面', 'warning');
+                setTimeout(() => { window.location.href = 'admin.html'; }, 1200);
+                return false;
             }
-            
-            const res = await fetch('/api/annotations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ task_name: taskName, duration_seconds: durationValue })
-            });
-            if (res.ok) {
-                document.getElementById('taskName').value = '';
-                document.getElementById('durationSec').value = '';
-                loadRecords();
-            } else {
-                const err = await res.json();
-                alert(err.error);
-            }
+            document.getElementById('annotatorUsername').innerHTML = `<i class="fas fa-user-astronaut"></i> ${data.username}`;
+            return true;
+        } catch (err) {
+            window.location.href = 'login.html';
+            return false;
         }
+    }
 
-        function startEdit(id, taskName, durationSec) {
-            const newTaskName = prompt('修改任务名:', taskName);
-            if (newTaskName === null) return;
-            const newDuration = prompt('修改视频时长(秒或分:秒.毫秒):', durationSec.toFixed(3));
-            if (newDuration === null) return;
-            
-            const durationValue = parseDuration(newDuration);
-            if (isNaN(durationValue) || durationValue <= 0) {
-                alert('请输入有效的时间格式（如30.500或1:30.500）');
-                return;
-            }
-            
-            updateRecord(id, newTaskName.trim(), durationValue);
+    // 获取我的记录数量 (/api/mycount)
+    async function fetchMyCount() {
+        try {
+            const resp = await authFetch('/api/mycount');
+            const data = await resp.json();
+            document.getElementById('myCountStat').innerText = data.count ?? 0;
+            return data.count;
+        } catch (e) {
+            console.warn(e);
+            document.getElementById('myCountStat').innerText = '0';
+            return 0;
         }
+    }
 
-        async function updateRecord(id, taskName, durationSec) {
-            if (!taskName || isNaN(durationSec) || durationSec <= 0) { alert('输入无效'); return; }
-            const res = await fetch(`/api/annotations/${id}`, {
+    // 获取我的标注记录列表 (同时用来计算总时长)
+    async function fetchMyAnnotations() {
+        const resp = await authFetch('/api/annotations');
+        const records = await resp.json();
+        return records;
+    }
+
+    // 渲染表格并更新总时长 (传入记录数组)
+    function renderTable(records) {
+        const tbody = document.getElementById('tableBody');
+        if (!records || records.length === 0) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无标注记录，点击上方创建吧 ✨</td></tr>';
+            document.getElementById('totalDurationStat').innerText = '0.00';
+            return;
+        }
+        let totalDuration = 0;
+        tbody.innerHTML = '';
+        for (const rec of records) {
+            totalDuration += rec.duration_seconds || 0;
+            const row = tbody.insertRow();
+            row.insertCell(0).innerText = rec.id;
+            row.insertCell(1).innerText = rec.task_name;
+            row.insertCell(2).innerText = rec.duration_seconds.toFixed(2);
+            row.insertCell(3).innerText = rec.created_at;
+            row.insertCell(4).innerText = rec.version;
+            const actionCell = row.insertCell(5);
+            actionCell.className = 'action-buttons';
+            
+            const editBtn = document.createElement('button');
+            editBtn.className = 'icon-btn edit';
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.title = '编辑';
+            editBtn.onclick = () => editRecord(rec.id, rec.task_name, rec.duration_seconds, rec.version);
+            
+            const delBtn = document.createElement('button');
+            delBtn.className = 'icon-btn delete';
+            delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            delBtn.title = '删除';
+            delBtn.onclick = () => deleteRecord(rec.id, rec.version);
+            
+            actionCell.appendChild(editBtn);
+            actionCell.appendChild(delBtn);
+        }
+        document.getElementById('totalDurationStat').innerText = totalDuration.toFixed(2);
+    }
+
+    // 刷新整个页面数据 (数量+列表)
+    async function refreshData() {
+        try {
+            const records = await fetchMyAnnotations();
+            renderTable(records);
+            await fetchMyCount(); // 更新数量卡片
+        } catch (err) {
+            showToast('刷新数据失败: ' + err.message, 'error');
+        }
+    }
+
+    // 创建标注记录 (携带幂等键)
+    async function createAnnotation(taskName, durationSeconds) {
+        const idempotencyKey = crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36);
+        const resp = await authFetch('/api/annotations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Idempotency-Key': idempotencyKey
+            },
+            body: JSON.stringify({ task_name: taskName, duration_seconds: durationSeconds })
+        });
+        const data = await resp.json();
+        if (resp.ok || resp.status === 201) {
+            showToast(`✅ 创建成功！记录ID: ${data.id}`, 'success');
+            await refreshData();
+        } else if (resp.status === 429) {
+            showToast('请求正在处理中(幂等保护)，请稍后重试', 'warning');
+        } else {
+            showToast(data.error || '创建失败', 'error');
+        }
+    }
+
+    // 编辑记录 (乐观锁)
+    async function editRecord(id, oldTask, oldDur, version) {
+        const newTask = prompt('编辑任务名称', oldTask);
+        if (newTask === null || newTask.trim() === '') {
+            if (newTask !== null) showToast('任务名不能为空', 'error');
+            return;
+        }
+        let newDur = parseFloat(prompt('编辑耗时(秒)，正数 ≤86400', oldDur));
+        if (isNaN(newDur)) newDur = oldDur;
+        if (newDur <= 0 || newDur > 86400) {
+            showToast('时长需大于0且不超过86400秒', 'error');
+            return;
+        }
+        // 发起更新请求
+        try {
+            const resp = await authFetch(`/api/annotations/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ task_name: taskName, duration_seconds: durationSec })
+                body: JSON.stringify({
+                    task_name: newTask.trim(),
+                    duration_seconds: newDur,
+                    version: version
+                })
             });
-            if (res.ok) {
-                loadRecords();
+            const data = await resp.json();
+            if (resp.ok) {
+                showToast('更新成功', 'success');
+                await refreshData();
+            } else if (resp.status === 409) {
+                showToast('数据已被他人修改，请刷新后重新编辑 (乐观锁冲突)', 'error');
+                await refreshData(); // 重新加载最新数据
             } else {
-                const err = await res.json();
-                alert(err.error);
+                showToast(data.error || '更新失败', 'error');
             }
+        } catch (err) {
+            showToast('网络错误，更新失败', 'error');
         }
+    }
 
-        async function deleteRecord(id) {
-            if (!confirm('确定要删除吗？')) return;
-            const res = await fetch(`/api/annotations/${id}`, { method: 'DELETE' });
-            if (res.ok) loadRecords();
-            else alert('删除失败');
-        }
-
-        async function logout() {
-            await fetch('/api/logout', { method: 'POST' });
-            window.location.href = '/login.html';
-        }
-
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return String(text).replace(/[&<>"']/g, m => map[m]);
-        }
-
-        function parseDuration(input) {
-            if (!input || input.trim() === '') return NaN;
-            
-            const trimmed = input.trim();
-            
-            // 检查是否包含冒号（分:秒.毫秒格式）
-            if (trimmed.includes(':')) {
-                const parts = trimmed.split(':');
-                if (parts.length !== 2) return NaN;
-                
-                const minutes = parseFloat(parts[0]);
-                const seconds = parseFloat(parts[1]);
-                
-                if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0) {
-                    return NaN;
-                }
-                
-                return minutes * 60 + seconds;
+    // 删除记录
+    async function deleteRecord(id, version) {
+        if (!confirm(`确定要删除 ID 为 ${id} 的标注记录吗？不可恢复。`)) return;
+        try {
+            const resp = await authFetch(`/api/annotations/${id}`, {
+                method: 'DELETE'
+            });
+            if (resp.ok) {
+                showToast('删除成功', 'success');
+                await refreshData();
             } else {
-                // 直接解析为秒数
-                const seconds = parseFloat(trimmed);
-                return isNaN(seconds) || seconds < 0 ? NaN : seconds;
+                const err = await resp.json();
+                showToast(err.error || '删除失败', 'error');
+                if (resp.status === 409) await refreshData(); // 可能版本导致，刷新
             }
+        } catch (err) {
+            showToast('删除请求失败', 'error');
         }
+    }
 
-        checkSession();
-    </script>
+    // 登出
+    async function logout() {
+        try {
+            await fetch(`${BASE_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+        } catch(e) {}
+        window.location.href = 'login.html';
+    }
+
+    // 绑定创建按钮事件
+    function bindCreateEvent() {
+        const createBtn = document.getElementById('createRecordBtn');
+        const taskInput = document.getElementById('taskNameInput');
+        const durInput = document.getElementById('durationInput');
+        
+        createBtn.addEventListener('click', async () => {
+            const taskName = taskInput.value.trim();
+            const duration = parseFloat(durInput.value);
+            if (!taskName) {
+                showToast('任务名称不能为空', 'error');
+                return;
+            }
+            if (isNaN(duration) || duration <= 0 || duration > 86400) {
+                showToast('请输入有效的时长 (正数，最大86400秒)', 'error');
+                return;
+            }
+            // 禁用按钮防止重复提交
+            createBtn.disabled = true;
+            const originalText = createBtn.innerHTML;
+            createBtn.innerHTML = '<span class="loading-spinner"></span> 创建中...';
+            try {
+                await createAnnotation(taskName, duration);
+                taskInput.value = '';
+                durInput.value = '';
+            } catch (err) {
+                // 错误已在内层toast
+            } finally {
+                createBtn.disabled = false;
+                createBtn.innerHTML = originalText;
+            }
+        });
+    }
+
+    // 页面初始化
+    (async function init() {
+        const isValid = await checkSessionAndRole();
+        if (!isValid) return;
+        await refreshData();
+        bindCreateEvent();
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+    })();
+</script>
 </body>
 </html>

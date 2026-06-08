@@ -1,110 +1,662 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>管理员面板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>管理控制台 | 视频标注系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { font-family: Arial; margin: 20px; background: #f9f9f9; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #f2f2f2; }
-        .logout { float: right; }
-        h2, h3 { margin-top: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 10% 20%, #0a0f1c, #03060f);
+            color: #eef2ff;
+            padding: 28px 24px;
+            min-height: 100vh;
+        }
+
+        /* 容器 */
+        .admin-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            background: rgba(18, 25, 45, 0.7);
+            backdrop-filter: blur(16px);
+            border-radius: 2rem;
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, #a5f3fc, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .badge-admin {
+            background: #8b5cf6;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .logout-btn {
+            background: #334155;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 2rem;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .logout-btn:hover {
+            background: #ef4444;
+            transform: scale(0.96);
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+        .stat-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 1.8rem;
+            padding: 1.2rem 1.8rem;
+            flex: 1;
+            min-width: 180px;
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            transition: 0.2s;
+        }
+        .stat-card h4 {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(145deg, #c084fc, #60a5fa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* 通用表格样式 */
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 1.8rem 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid #8b5cf6;
+            padding-left: 16px;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 1.5rem;
+            background: rgba(18, 25, 45, 0.5);
+            backdrop-filter: blur(4px);
+            border: 1px solid #1e293b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            background: #0f172a;
+            color: #cbd5e6;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #1e293b;
+            color: #e2e8f0;
+        }
+        tr:hover td {
+            background: #1e293b50;
+        }
+
+        /* 控制选项区域 (可复用卡片组) */
+        .control-section {
+            margin: 2rem 0 2rem 0;
+        }
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.2rem;
+        }
+        /* 通用控制卡片样式 (方便前端增删卡片) */
+        .control-card {
+            background: rgba(12, 20, 35, 0.8);
+            backdrop-filter: blur(12px);
+            border-radius: 1.5rem;
+            padding: 1.2rem 1.5rem;
+            border: 1px solid #2d3a5e;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .control-card:hover {
+            border-color: #5b6e8c;
+            transform: translateY(-2px);
+        }
+        .control-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0.5rem;
+        }
+        .control-desc {
+            font-size: 0.8rem;
+            color: #9ca8c3;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+        .control-btn {
+            background: #2d3a5e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 2rem;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            align-self: flex-start;
+            margin-top: 8px;
+        }
+        .control-btn.primary {
+            background: #3b82f6;
+        }
+        .control-btn.primary:hover {
+            background: #2563eb;
+        }
+        .control-btn.danger {
+            background: #b91c1c;
+        }
+        .control-btn.danger:hover {
+            background: #7f1a1a;
+        }
+
+        /* 危险区特殊风格 */
+        .danger-zone {
+            margin-top: 2rem;
+            background: rgba(127, 29, 29, 0.2);
+            border: 1px solid #f87171;
+            border-radius: 1.8rem;
+            padding: 1.4rem 1.8rem;
+        }
+        .danger-title {
+            font-weight: 700;
+            color: #fca5a5;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .danger-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .danger-card {
+            background: #1e1b2e60;
+            border-left: 3px solid #ef4444;
+            border-radius: 1.2rem;
+            padding: 1rem 1.4rem;
+            flex: 1;
+            min-width: 220px;
+        }
+
+        /* 消息提示 */
+        .toast-message {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e293b;
+            border-left: 5px solid;
+            padding: 12px 20px;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: fadeInUp 0.2s ease;
+            font-weight: 500;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        i.icon-mr { margin-right: 8px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <button class="logout" onclick="logout()">退出登录</button>
-        <h2>管理员面板</h2>
-        
-        <h3>所有标注记录</h3>
-        <table id="allRecordsTable">
-            <thead>
-                <tr><th>ID</th><th>用户</th><th>任务名</th><th>视频时长(s)</th><th>创建时间</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+<div class="admin-container">
+    <!-- 顶部栏 -->
+    <div class="top-nav">
+        <div class="brand"><i class="fas fa-chalkboard-user"></i> 标注管理中枢 · 管理员</div>
+        <div class="user-info">
+            <span id="adminUsername"><i class="fas fa-user-shield"></i> 加载中...</span>
+            <span class="badge-admin">ROOT</span>
+            <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+    </div>
 
-        <div id="summaryStats" style="margin-bottom: 20px; background: #e9ecef; padding: 10px; border-radius: 4px;"></div>
+    <!-- 统计卡片 -->
+    <div class="stats-grid">
+        <div class="stat-card"><h4><i class="fas fa-database"></i> 总标注记录数</h4><div class="stat-number" id="totalRecords">--</div></div>
+        <div class="stat-card"><h4><i class="fas fa-hourglass-half"></i> 总标注时长 (秒)</h4><div class="stat-number" id="totalDuration">--</div></div>
+        <div class="stat-card"><h4><i class="fas fa-users"></i> 活跃成员数</h4><div class="stat-number" id="totalUsers">--</div></div>
+    </div>
 
-        <h3>员工信息及标注数量</h3>
+    <!-- 所有成员列表 -->
+    <div class="section-title"><i class="fas fa-users-viewfinder"></i> 所有成员 & 统计</div>
+    <div class="table-wrapper">
         <table id="usersTable">
             <thead>
-                <tr><th>用户名</th><th>角色</th><th>标注数量</th><th>标注时长(秒)</th></tr>
+                <tr><th>用户名</th><th>角色</th><th>标注数量</th><th>总时长(秒)</th></tr>
             </thead>
-            <tbody></tbody>
+            <tbody id="usersTableBody">
+                <tr><td colspan="4" style="text-align:center">加载成员数据...</td></tr>
+            </tbody>
         </table>
     </div>
 
-    <script>
-        async function checkAdmin() {
-            const res = await fetch('/api/session');
-            if (res.status === 401 || (await res.json()).role !== 'admin') {
-                window.location.href = '/login.html';
+    <!-- 所有标注任务明细 -->
+    <div class="section-title"><i class="fas fa-tasks"></i> 全量标注任务明细</div>
+    <div class="table-wrapper">
+        <table id="allAnnotationsTable">
+            <thead>
+                <tr><th>ID</th><th>用户名</th><th>任务名称</th><th>时长(秒)</th><th>创建时间</th><th>版本</th></tr>
+            </thead>
+            <tbody id="annotationsTableBody">
+                <tr><td colspan="6" style="text-align:center">加载任务记录...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 服务器控制选项区域 (可复用卡片) 根据配置数组动态生成，方便增删 -->
+    <div class="control-section">
+        <div class="section-title"><i class="fas fa-sliders-h"></i> 服务器控制选项</div>
+        <div id="controlCardsContainer" class="control-grid"></div>
+    </div>
+
+    <!-- 危险操作预留区 (危险操作均可在此扩展) -->
+    <div class="danger-zone">
+        <div class="danger-title"><i class="fas fa-skull-crossbones"></i> 危险操作区 (谨慎执行)</div>
+        <div class="danger-grid" id="dangerZoneContainer">
+            <!-- 危险操作卡片示例，后续可轻松添加 -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // ======================== 配置区域 ========================
+    // API 基地址 (根据部署环境修改)
+    const BASE_URL = (() => {
+        // 如果当前地址是file协议或需要指定后端，请修改此处，一般与后端同域留空
+        if (window.location.origin === 'file://') return 'http://localhost:5000';
+        return '';  // 同域部署时使用相对路径
+    })();
+
+    // ---------- 控制选项配置 (可复用的核心) ----------
+    // 每个选项需包含: id, title, description, buttonText, action(异步函数), isPrimaryStyle(可选)
+    // 前端程序员只需在此数组中增删对象即可在界面生成对应控制卡片
+    const CONTROL_OPTIONS = [
+        {
+            id: 'consistencyCheck',
+            title: '数据一致性检查',
+            description: '对比明细记录与分组聚合结果，检测数据库异常或不一致。',
+            buttonText: '执行检查',
+            isPrimary: true,
+            action: async () => {
+                const res = await adminFetch('/api/admin/consistency_check', { method: 'GET' });
+                if (res.status === 200) {
+                    const data = await res.json();
+                    showToast(`✅ 一致性检查通过: ${data.message || '数据一致'}`, 'success');
+                } else if (res.status === 409) {
+                    const errorData = await res.json();
+                    let issueMsg = '数据不一致:\n';
+                    if (errorData.issues) {
+                        errorData.issues.forEach(issue => {
+                            issueMsg += `用户 ${issue.username}: 分组统计 ${issue.group_count} 条，明细 ${issue.detail_count} 条\n`;
+                        });
+                    } else {
+                        issueMsg += errorData.error || '检测到不一致';
+                    }
+                    showToast(issueMsg, 'error', 6000);
+                } else {
+                    const err = await res.json();
+                    showToast(err.error || '一致性检查失败', 'error');
+                }
+            }
+        },
+        {
+            id: 'cleanupIdempotency',
+            title: '清理过期幂等键',
+            description: '手动清除24小时前的幂等键缓存，释放存储空间。',
+            buttonText: '立即清理',
+            isPrimary: false,
+            action: async () => {
+                const res = await adminFetch('/api/admin/cleanup_idempotency_keys', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`✅ 清理完成，共删除 ${data.deleted_count} 条过期幂等键`, 'success');
+                } else {
+                    showToast(data.error || '清理失败', 'error');
+                }
+            }
+        },
+        {
+            id: 'exportExcel',
+            title: '导出 Excel 报表',
+            description: '生成包含“标注记录总表”和“个人统计”的 Excel 文件 (xlsx)',
+            buttonText: '下载报表',
+            isPrimary: true,
+            action: async () => {
+                // 导出操作使用新窗口打开保证下载流
+                try {
+                    // 由于是GET下载，直接打开带cookie的url
+                    window.open(`${BASE_URL}/excel`, '_blank');
+                    showToast('正在生成报表，请稍等...', 'info');
+                } catch(e) {
+                    showToast('导出失败，请检查网络', 'error');
+                }
+            }
+        }
+        // 未来添加新选项：只需追加对象，即可自动生成卡片
+        // 例如 { id: 'rebuildCache', title: '重建索引', description: '重建搜索索引', buttonText: '执行', action: async()=>{...} }
+    ];
+
+    // ---------- 危险操作配置 (独立配置，方便扩展) ----------
+    // 虽然是危险区，但同样具备名称+介绍+按钮，为了方便扩展也采用配置方式
+    const DANGER_ACTIONS = [
+        {
+            id: 'dangerResetDemo',
+            title: '⚠️ 重置模拟数据 (预留)',
+            description: '危险：将清空所有标注记录并重置为演示状态。需要后端支持。',
+            buttonText: '危险操作 (未启用)',
+            handler: async () => {
+                if(confirm('【演示】该接口尚未提供，如需要此危险操作，请联系后端团队开发。是否继续模拟？')) {
+                    showToast('当前仅为前端占位，无实际API调用', 'error');
+                }
+            }
+        },
+        {
+            id: 'dangerAuditClean',
+            title: '🗑️ 清空审计日志 (预留)',
+            description: '清空所有审计日志，无法恢复。需后端配合审计删除接口。',
+            buttonText: '申请清理 (未实现)',
+            handler: async () => {
+                showToast('未开放API，仅示意危险区扩展能力', 'error');
+            }
+        }
+    ];
+
+    // ======================== 辅助函数 ========================
+    function showToast(message, type = 'info', duration = 4000) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-message';
+        let icon = 'ℹ️';
+        if (type === 'success') icon = '✅';
+        if (type === 'error') icon = '❌';
+        if (type === 'warning') icon = '⚠️';
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-info-circle')}"></i> ${message}`;
+        toast.style.borderLeftColor = type === 'success' ? '#4ade80' : (type === 'error' ? '#f87171' : '#3b82f6');
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, duration);
+    }
+
+    // 封装fetch，自动处理401/403跳转
+    async function adminFetch(url, options = {}) {
+        const fullUrl = BASE_URL + url;
+        const response = await fetch(fullUrl, {
+            ...options,
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...options.headers }
+        });
+        if (response.status === 401 || response.status === 403) {
+            showToast('登录已过期或权限不足，请重新登录', 'error');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            throw new Error('Unauthorized');
+        }
+        return response;
+    }
+
+    // 加载session并校验是否为管理员
+    async function checkAdminSession() {
+        try {
+            const resp = await fetch(`${BASE_URL}/api/session`, { credentials: 'include' });
+            if (!resp.ok) throw new Error('no session');
+            const data = await resp.json();
+            if (!data.username || data.role !== 'admin') {
+                showToast('当前用户非管理员，将跳转至标注员界面', 'error');
+                setTimeout(() => { window.location.href = 'annotator.html'; }, 1000);
+                return false;
+            }
+            document.getElementById('adminUsername').innerHTML = `<i class="fas fa-crown"></i> ${data.username}`;
+            return true;
+        } catch (err) {
+            window.location.href = 'login.html';
+            return false;
+        }
+    }
+
+    // 加载全局汇总和用户统计、明细
+    async function loadSummary() {
+        try {
+            const res = await adminFetch('/api/admin/summary');
+            const data = await res.json();
+            document.getElementById('totalRecords').innerText = data.total_records ?? 0;
+            document.getElementById('totalDuration').innerText = (data.total_duration_seconds ?? 0).toFixed(2);
+        } catch(e) { console.warn(e); }
+    }
+
+    async function loadUserStats() {
+        try {
+            const res = await adminFetch('/api/admin/users');
+            const users = await res.json();
+            document.getElementById('totalUsers').innerText = users.length;
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">暂无成员数据</td></tr>';
                 return;
             }
-            loadAllRecords();
-            loadUsers();
-            loadSummary();
-        }
+            users.forEach(user => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = user.username;
+                row.insertCell(1).innerText = user.role === 'admin' ? '管理员' : '标注员';
+                row.insertCell(2).innerText = user.annotation_count;
+                row.insertCell(3).innerText = (user.total_duration_seconds || 0).toFixed(2);
+            });
+        } catch(e) { showToast('加载用户统计失败', 'error'); }
+    }
 
-        async function loadAllRecords() {
-            const res = await fetch('/api/admin/annotations');
+    async function loadAllAnnotations() {
+        try {
+            const res = await adminFetch('/api/admin/annotations');
             const records = await res.json();
-            const tbody = document.querySelector('#allRecordsTable tbody');
+            const tbody = document.getElementById('annotationsTableBody');
             tbody.innerHTML = '';
-            records.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${r.id}</td>
-                    <td>${escapeHtml(r.username)}</td>
-                    <td>${escapeHtml(r.task_name)}</td>
-                    <td>${r.duration_seconds.toFixed(3)}</td>
-                    <td>${r.created_at}</td>
-                `;
-                tbody.appendChild(tr);
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">暂无标注记录</td></tr>';
+                return;
+            }
+            records.forEach(rec => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = rec.id;
+                row.insertCell(1).innerText = rec.username;
+                row.insertCell(2).innerText = rec.task_name;
+                row.insertCell(3).innerText = rec.duration_seconds;
+                row.insertCell(4).innerText = rec.created_at;
+                row.insertCell(5).innerText = rec.version;
             });
-        }
+        } catch(e) { showToast('加载标注明细失败', 'error'); }
+    }
 
-        async function loadUsers() {
-            const res = await fetch('/api/admin/users');
-            const users = await res.json();
-            const tbody = document.querySelector('#usersTable tbody');
-            tbody.innerHTML = '';
-            users.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${escapeHtml(u.username)}</td>
-                    <td>${u.role === 'admin' ? '管理员' : '标注员'}</td>
-                    <td>${u.annotation_count}</td>
-                    <td>${u.total_duration_seconds.toFixed(3)}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+    // 刷新所有数据 (汇总，成员，明细)
+    async function refreshAllData() {
+        await Promise.all([loadSummary(), loadUserStats(), loadAllAnnotations()]);
+    }
 
-        async function logout() {
-            await fetch('/api/logout', { method: 'POST' });
-            window.location.href = '/login.html';
-        }
-
-        // 调用汇总接口并显示
-        async function loadSummary() {
-            const res = await fetch('/api/admin/summary');
-            const data = await res.json();
-            document.getElementById('summaryStats').innerHTML = `
-                📊 总标注记录数：${data.total_records} &nbsp;|&nbsp;
-                ⏱️ 总标注时长：${data.total_duration_seconds} 秒
+    // 渲染控制卡片 (可复用样式)
+    function renderControlCards() {
+        const container = document.getElementById('controlCardsContainer');
+        container.innerHTML = '';
+        for (const opt of CONTROL_OPTIONS) {
+            const card = document.createElement('div');
+            card.className = 'control-card';
+            card.innerHTML = `
+                <div class="control-title"><i class="fas ${getIconForOption(opt.id)}"></i> ${escapeHtml(opt.title)}</div>
+                <div class="control-desc">${escapeHtml(opt.description)}</div>
+                <button class="control-btn ${opt.isPrimary ? 'primary' : ''}" data-id="${opt.id}">${escapeHtml(opt.buttonText)}</button>
             `;
+            const btn = card.querySelector('button');
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading-spinner"></span> 执行中...';
+                try {
+                    await opt.action();
+                } catch (err) {
+                    console.error(err);
+                    showToast(`操作失败: ${err.message || '未知错误'}`, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            });
+            container.appendChild(card);
         }
+    }
 
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return String(text).replace(/[&<>"']/g, m => map[m]);
+    // 渲染危险操作区 (同样展示名称+描述+按钮，可复用样式)
+    function renderDangerZone() {
+        const container = document.getElementById('dangerZoneContainer');
+        container.innerHTML = '';
+        for (const danger of DANGER_ACTIONS) {
+            const card = document.createElement('div');
+            card.className = 'danger-card';
+            card.style.background = '#2d1b2e60';
+            card.innerHTML = `
+                <div style="font-weight:700; margin-bottom:6px;"><i class="fas fa-exclamation-triangle"></i> ${escapeHtml(danger.title)}</div>
+                <div style="font-size:0.75rem; color:#e2e8f0; margin-bottom:12px;">${escapeHtml(danger.description)}</div>
+                <button class="control-btn danger" data-danger="${danger.id}">${escapeHtml(danger.buttonText)}</button>
+            `;
+            const btn = card.querySelector('button');
+            btn.addEventListener('click', async () => {
+                if (confirm(`⚠️ 危险操作: ${danger.title}\n请确认是否继续？`)) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="loading-spinner"></span> 处理中...';
+                    try {
+                        await danger.handler();
+                    } catch (e) { showToast(`错误: ${e.message}`, 'error'); }
+                    finally {
+                        btn.disabled = false;
+                        btn.innerHTML = danger.buttonText;
+                    }
+                }
+            });
+            container.appendChild(card);
         }
+        // 如果危险区为空，显示占位提示
+        if (DANGER_ACTIONS.length === 0) {
+            container.innerHTML = '<div style="padding:1rem; color:#aaa">暂无危险操作配置，可在DANGER_ACTIONS中添加</div>';
+        }
+    }
 
-        checkAdmin();
-    </script>
+    function getIconForOption(id) {
+        const map = {
+            consistencyCheck: 'fa-check-double',
+            cleanupIdempotency: 'fa-broom',
+            exportExcel: 'fa-file-excel'
+        };
+        return map[id] || 'fa-plug';
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // 登出逻辑
+    async function logout() {
+        try {
+            await fetch(`${BASE_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+        } catch(e) {}
+        window.location.href = 'login.html';
+    }
+
+    // 页面初始化
+    (async function init() {
+        const isAdmin = await checkAdminSession();
+        if (!isAdmin) return;
+        // 加载数据
+        await refreshAllData();
+        // 渲染可复用的控制选项区域
+        renderControlCards();
+        // 渲染危险操作区
+        renderDangerZone();
+        // 绑定登出
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+    })();
+</script>
 </body>
 </html>
