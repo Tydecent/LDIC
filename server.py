@@ -1,8 +1,8 @@
 import json
+import os
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import event
 from functools import wraps
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
@@ -11,16 +11,19 @@ from flask import send_file
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = 'your-secret-key-change-in-production'  # 生产环境请更换
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///annotations.db'
+
+# ---------- PostgreSQL 数据库配置 ----------
+# 从环境变量获取 DATABASE_URL，默认使用本地 PostgreSQL 示例
+# 格式示例：postgresql://username:password@localhost:5432/annotations_db
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if not DATABASE_URL:
+    # 如果没有设置环境变量，使用默认本地连接（请根据实际修改）
+    DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/annotations_db'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
-# ---------- 启用 SQLite WAL 模式，提高并发 ----------
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute('PRAGMA journal_mode=WAL;')
-    cursor.close()
 
 # ---------- 加载账号 ----------
 def load_accounts():
@@ -197,16 +200,13 @@ def admin_all_annotations():
 @login_required
 @admin_required
 def admin_users():
-    # 从数据库统计每个人的标注数量
     from sqlalchemy import func
-    # 同时统计数量与总时长（毫秒）
     stats = db.session.query(
         Annotation.username,
         func.count(Annotation.id).label('count'),
         func.sum(Annotation.duration_ms).label('total_duration_ms')
     ).group_by(Annotation.username).all()
     
-    # 构建用户统计映射
     stat_map = {s.username: (s.count, s.total_duration_ms) for s in stats}
     
     result = []
@@ -221,7 +221,6 @@ def admin_users():
         })
     return jsonify(result)
 
-# 管理员汇总接口 返回全局总记录数和总时长
 @app.route('/api/admin/summary', methods=['GET'])
 @login_required
 @admin_required
@@ -236,36 +235,29 @@ def admin_summary():
     })
 
 # ---------- 导出 Excel ----------
-# 该接口返回一个 Excel 文件，包含所有标注记录，按创建时间升序排列
 @app.route('/excel', methods=['GET'])
 def export_excel():
     from sqlalchemy import func
 
-    # 1. 获取所有标注记录（按创建时间升序）
     records = Annotation.query.order_by(Annotation.created_at.asc()).all()
 
-    # 2. 获取用户统计（完成条数、总时长毫秒）
     stats_query = db.session.query(
         Annotation.username,
         func.count(Annotation.id).label('count'),
         func.sum(Annotation.duration_ms).label('total_ms')
     ).group_by(Annotation.username).all()
-    # 转为字典便于查找
     stat_map = {s.username: (s.count, s.total_ms) for s in stats_query}
 
-    # 3. 创建工作簿和工作表
     wb = Workbook()
     ws_details = wb.active
     ws_details.title = "标注记录总表"
 
-    # 3.1 标注记录总表的表头
     headers = ['序号', '姓名', '任务名', '时长(秒)']
     ws_details.append(headers)
     for cell in ws_details[1]:
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal='center')
 
-    # 3.2 填充标注记录数据
     for idx, record in enumerate(records, start=1):
         duration_sec = round(record.duration_ms / 1000, 3)
         ws_details.append([
@@ -275,37 +267,30 @@ def export_excel():
             duration_sec
         ])
 
-    # 3.3 调整标注记录总表的列宽
     ws_details.column_dimensions['A'].width = 8
     ws_details.column_dimensions['B'].width = 15
     ws_details.column_dimensions['C'].width = 50
     ws_details.column_dimensions['D'].width = 12
 
-    # 4. 创建第二个工作表：个人统计
     ws_stats = wb.create_sheet("个人统计")
-    # 4.1 表头
     ws_stats.append(['姓名', '完成条数', '完成时长(秒)'])
     for cell in ws_stats[1]:
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal='center')
 
-    # 4.2 遍历所有用户（包含零记录的用户）
     for username, info in USERS.items():
         count, total_ms = stat_map.get(username, (0, 0))
         total_seconds = round(total_ms / 1000, 3) if total_ms else 0
         ws_stats.append([username, count, total_seconds])
 
-    # 4.3 调整个人统计表的列宽
     ws_stats.column_dimensions['A'].width = 15
     ws_stats.column_dimensions['B'].width = 12
     ws_stats.column_dimensions['C'].width = 15
 
-    # 5. 保存到内存流并返回
     output = BytesIO()
     wb.save(output)
     output.seek(0)
     
-    # 返回文件下载响应
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -316,13 +301,5 @@ def export_excel():
 # ---------- 启动 ----------
 if __name__ == '__main__':
     with app.app_context():
-        # 注册 SQLite WAL 模式事件（需要在 engine 可用之后）
-        @event.listens_for(db.engine, 'connect')
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            cursor = dbapi_connection.cursor()
-            cursor.execute('PRAGMA journal_mode=WAL;')
-            cursor.close()
-        
         db.create_all()
-    # 使用多线程模式，适合开发和小规模部署
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
