@@ -484,15 +484,50 @@
         }
     }
 
-    // ---------- 危险区预留动作 (仅示意) ----------
-    async function dangerResetDemo(btn) {
-        if(confirm('【危险】重置模拟数据 (演示功能) 当前接口未开放，请确认仅作示意？')) {
-            showToast('当前为演示占位，无实际API调用。如需要此危险操作，请后端开发对应接口。', 'warning', 5000);
+    // 导出并重置
+    async function actionExportAndReset(btn) {
+        try {
+            const res = await adminFetch('/api/admin/export_and_reset', {
+                method: 'POST',
+                body: JSON.stringify({ confirm: true })
+            });
+            const data = await res.json();
+            showToast(`✅ ${data.message}`, 'success', 5000);
+            // 自动下载快照文件
+            if (data.download_url) {
+                window.open(data.download_url, '_blank');
+            }
+            // 重置后数据已清空，刷新页面展示
+            await refreshAllData();
+        } catch (err) {
+            if (err.message === 'Unauthorized') return;
+            showToast(`导出并重置失败: ${err.message || '未知错误'}`, 'error');
         }
     }
-    async function dangerAuditClean(btn) {
-        if(confirm('【危险】清空审计日志 (演示预留) 无法恢复，是否继续？')) {
-            showToast('未开放API，仅示意危险区扩展能力。', 'error', 4000);
+
+    // 紧急停止
+    async function actionEmergencyStop(btn) {
+        try {
+            const res = await adminFetch('/api/admin/emergency_stop', {
+                method: 'POST',
+                body: JSON.stringify({ confirm: true })
+            });
+            const data = await res.json();
+            showToast(`⚠️ ${data.message}，应用即将退出。`, 'warning', 8000);
+            // 禁用页面所有操作按钮，防止继续调用
+            document.querySelectorAll('.control-btn, .refresh-btn, .logout-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            // 可选：显示提示条，页面不再可用
+            const container = document.querySelector('.admin-container');
+            const haltMsg = document.createElement('div');
+            haltMsg.className = 'stat-card';
+            haltMsg.style.background = '#7f1a1a';
+            haltMsg.innerHTML = '<h4>🚨 应用已触发紧急停止，进程即将终止</h4>';
+            container.prepend(haltMsg);
+        } catch (err) {
+            if (err.message === 'Unauthorized') return;
+            showToast(`紧急停止失败: ${err.message}`, 'error');
         }
     }
 
@@ -528,18 +563,18 @@
     // 危险操作配置 ( 一行一个 )
     const dangerControls = [
         {
-            id: 'dangerReset',
-            title: '⚠️ 重置模拟数据 (预留)',
-            description: '危险：将清空所有标注记录并重置为演示状态。需要后端支持。',
-            buttonText: '危险操作 (未启用)',
-            action: dangerResetDemo
+            id: 'exportAndReset',
+            title: '导出并重置标注数据',
+            description: '旧的工作日结束，新的工作日开始时，执行此操作导出并清空数据。',
+            buttonText: '导出并重置',
+            action: actionExportAndReset
         },
         {
-            id: 'dangerAudit',
-            title: '🗑️ 清空审计日志 (预留)',
-            description: '清空所有审计日志，无法恢复。需后端配合审计删除接口。',
-            buttonText: '申请清理 (未实现)',
-            action: dangerAuditClean
+            id: 'emergencyStop',
+            title: '紧急停止应用',
+            description: '当数据明显异常时，执行此操作保存紧急快照后立即终止服务\n宁可停止服务，也不破坏数据。',
+            buttonText: '紧急停止',
+            action: actionEmergencyStop
         }
     ];
 

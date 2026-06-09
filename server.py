@@ -11,6 +11,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from sqlalchemy import func, event
 from sqlalchemy.exc import IntegrityError, OperationalError
+import threading
+import time
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = 'your-secret-key-change-in-production'  # 生产环境请更换
@@ -18,7 +20,7 @@ app.secret_key = 'your-secret-key-change-in-production'  # 生产环境请更换
 # ---------- PostgreSQL 数据库配置 ----------
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
-    DATABASE_URL = 'postgresql://postgres:20260609@localhost:5432/annotations_db'
+    DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/annotations_db'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -535,6 +537,179 @@ def cleanup_idempotency_keys():
     deleted = IdempotencyKey.query.filter(IdempotencyKey.expires_at < datetime.now(timezone.utc)).delete()
     db.session.commit()
     return jsonify({'deleted_count': deleted})
+
+# ================== 危险操作路由（管理员专用） ==================
+@app.route('/api/admin/export_and_reset', methods=['POST'])
+@login_required
+@admin_required
+def export_and_reset():
+    """
+    导出当前所有标注记录为 Excel 文件，然后清空 annotations 表并重置 ID 序列。
+    需要请求体: {"confirm": true}
+    """
+    data = request.get_json(silent=True) or {}
+    if not data.get('confirm'):
+        return jsonify({'error': '此操作将清空所有标注数据，请设置 confirm: true 以确认'}), 400
+
+    # 1. 生成带时间戳的快照文件名
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+    snapshot_dir = os.path.join(app.root_path, 'snapshots')
+    os.makedirs(snapshot_dir, exist_ok=True)
+    snapshot_file = os.path.join(snapshot_dir, f'annotations_before_reset_{timestamp}.xlsx')
+
+    # 2. 导出当前数据到 Excel 文件（复用现有导出逻辑）
+    try:
+        _export_to_excel_file(snapshot_file)
+    except Exception as e:
+        app.logger.error(f"导出快照失败: {e}")
+        return jsonify({'error': f'导出快照失败: {str(e)}'}), 500
+
+    # 3. 清空 annotations 表并重置 ID 序列（PostgreSQL）
+    try:
+        # 先删除所有记录（保留 audit_log 和 idempotency_keys 不动）
+        deleted_count = db.session.query(Annotation).delete()
+        # 重置序列（将 id 序列重置为 1）
+        db.session.execute(text("ALTER SEQUENCE annotations_id_seq RESTART WITH 1"))
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"重置数据库失败: {e}")
+        return jsonify({'error': f'重置数据库失败: {str(e)}'}), 500
+
+    # 4. 记录审计日志
+    record_audit('RESET_DATABASE', old_data={
+        'snapshot_file': snapshot_file,
+        'deleted_count': deleted_count
+    })
+
+    # 5. 返回快照文件下载链接（相对路径）
+    snapshot_url = f'/snapshots/{os.path.basename(snapshot_file)}'
+    return jsonify({
+        'message': f'导出并重置成功，共删除 {deleted_count} 条记录',
+        'snapshot_file': snapshot_file,
+        'download_url': snapshot_url
+    }), 200
+
+
+@app.route('/api/admin/emergency_stop', methods=['POST'])
+@login_required
+@admin_required
+def emergency_stop():
+    """
+    紧急停止：保存当前所有数据的快照，然后立即终止整个应用进程。
+    宁可停止服务，也不破坏数据。
+    需要请求体: {"confirm": true}
+    """
+    global _emergency_stop_triggered
+
+    data = request.get_json(silent=True) or {}
+    if not data.get('confirm'):
+        return jsonify({'error': '此操作将终止整个应用，请设置 confirm: true 以确认'}), 400
+
+    if _emergency_stop_triggered:
+        return jsonify({'error': '紧急停止已经触发，应用即将退出'}), 503
+
+    # 1. 生成带时间戳的快照文件名
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')
+    snapshot_dir = os.path.join(app.root_path, 'emergency_snapshots')
+    os.makedirs(snapshot_dir, exist_ok=True)
+    snapshot_file = os.path.join(snapshot_dir, f'emergency_stop_{timestamp}.xlsx')
+
+    # 2. 导出当前所有标注数据（包括审计日志？仅标注数据即可）
+    try:
+        _export_to_excel_file(snapshot_file)
+    except Exception as e:
+        app.logger.critical(f"紧急快照导出失败: {e}")
+        # 即使导出失败也继续停止，避免数据彻底损坏
+
+    # 3. 记录审计日志（尽力而为）
+    try:
+        record_audit('EMERGENCY_STOP', old_data={'snapshot_file': snapshot_file})
+        db.session.commit()
+    except Exception:
+        pass
+
+    # 4. 返回响应（告诉客户端进程即将退出），然后异步退出
+    def shutdown():
+        time.sleep(0.5)   # 确保响应已发送
+        app.logger.critical(f"Emergency stop triggered, snapshot saved to {snapshot_file}, exiting now.")
+        os._exit(1)       # 强制终止进程（不执行清理钩子，但保证立即停止）
+
+    threading.Thread(target=shutdown, daemon=True).start()
+
+    return jsonify({
+        'message': '紧急停止已触发，快照已保存，应用进程即将终止',
+        'snapshot_file': snapshot_file
+    }), 200
+
+
+def _export_to_excel_file(filepath):
+    """
+    内部函数：将当前所有标注数据导出为 Excel 文件到指定路径。
+    结构与 /excel 路由保持一致（包含“标注记录总表”和“个人统计”）。
+    """
+    records = Annotation.query.order_by(Annotation.created_at.asc()).all()
+
+    stats_query = db.session.query(
+        Annotation.username,
+        func.count(Annotation.id).label('count'),
+        func.sum(Annotation.duration_ms).label('total_ms')
+    ).group_by(Annotation.username).all()
+    stat_map = {s.username: (s.count, s.total_ms) for s in stats_query}
+
+    wb = Workbook()
+    ws_details = wb.active
+    ws_details.title = "标注记录总表"
+
+    headers = ['序号', '姓名', '任务名', '时长(秒)']
+    ws_details.append(headers)
+    for cell in ws_details[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+
+    for idx, record in enumerate(records, start=1):
+        duration_sec = round(record.duration_ms / 1000, 3)
+        ws_details.append([idx, record.username, record.task_name, duration_sec])
+
+    ws_details.column_dimensions['A'].width = 8
+    ws_details.column_dimensions['B'].width = 15
+    ws_details.column_dimensions['C'].width = 50
+    ws_details.column_dimensions['D'].width = 12
+
+    ws_stats = wb.create_sheet("个人统计")
+    ws_stats.append(['姓名', '完成条数', '完成时长(秒)'])
+    for cell in ws_stats[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+
+    # 从 USERS 获取所有用户（即使没有标注记录也显示）
+    for username, info in USERS.items():
+        count, total_ms = stat_map.get(username, (0, 0))
+        total_seconds = round(total_ms / 1000, 3) if total_ms else 0
+        ws_stats.append([username, count, total_seconds])
+
+    ws_stats.column_dimensions['A'].width = 15
+    ws_stats.column_dimensions['B'].width = 12
+    ws_stats.column_dimensions['C'].width = 15
+
+    wb.save(filepath)
+
+
+# 提供快照文件的静态访问路由（仅管理员可访问，但实际需要配合 Nginx 等，此处简单实现）
+@app.route('/snapshots/<path:filename>')
+@login_required
+@admin_required
+def download_snapshot(filename):
+    """下载生成的快照文件（仅管理员）"""
+    snapshot_dir = os.path.join(app.root_path, 'snapshots')
+    emergency_dir = os.path.join(app.root_path, 'emergency_snapshots')
+    # 允许从两个目录下载
+    if os.path.exists(os.path.join(snapshot_dir, filename)):
+        return send_from_directory(snapshot_dir, filename, as_attachment=True)
+    elif os.path.exists(os.path.join(emergency_dir, filename)):
+        return send_from_directory(emergency_dir, filename, as_attachment=True)
+    else:
+        return jsonify({'error': '文件不存在'}), 404
 
 # ---------- 启动 ----------
 if __name__ == '__main__':
