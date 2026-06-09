@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>标注工作台 | 视频标注系统</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>标注员面板 | 标注信息收集系统</title>
     <style>
         * {
             margin: 0;
@@ -280,44 +278,44 @@
 <div class="annotator-container">
     <!-- 顶部栏 -->
     <div class="top-nav">
-        <div class="brand"><i class="fas fa-pen-ruler"></i> 标注工作台 · 个人空间</div>
+        <div class="brand">标注员工作台</div>
         <div class="user-info">
-            <span id="annotatorUsername"><i class="fas fa-user-check"></i> 加载中...</span>
+            <span id="annotatorUsername"> 加载中...</span>
             <span class="badge-annotator">标注员</span>
-            <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            <button id="logoutBtn" class="logout-btn">退出</button>
         </div>
     </div>
 
     <!-- 统计卡片区 -->
     <div class="stats-grid">
         <div class="stat-card">
-            <h4><i class="fas fa-list-check"></i> 我的标注记录数</h4>
+            <h4>我的标注记录数</h4>
             <div class="stat-number" id="myCountStat">--</div>
         </div>
         <div class="stat-card">
-            <h4><i class="fas fa-hourglass-half"></i> 总标注时长 (秒)</h4>
+            <h4>总标注时长 (秒)</h4>
             <div class="stat-number" id="totalDurationStat">--</div>
         </div>
     </div>
 
     <!-- 新增标注记录表单 -->
     <div class="form-card">
-        <div class="form-title"><i class="fas fa-plus-circle"></i> 新增标注记录</div>
+        <div class="form-title">新增标注记录</div>
         <div class="form-row">
             <div class="input-group">
-                <label><i class="fas fa-tag"></i> 任务名称</label>
-                <input type="text" id="taskNameInput" placeholder="例: 车辆识别 / 语义分割" autocomplete="off">
+                <label>任务名称</label>
+                <input type="text" id="taskNameInput" autocomplete="off">
             </div>
             <div class="input-group">
-                <label><i class="fas fa-stopwatch"></i> 耗时 (秒) · 正数 ≤ 86400</label>
+                <label>耗时 (秒)</label>
                 <input type="number" id="durationInput" step="0.01" placeholder="例如 12.5">
             </div>
-            <button id="createRecordBtn" class="btn-primary"><i class="fas fa-save"></i> 创建记录</button>
+            <button id="createRecordBtn" class="btn-primary">创建记录</button>
         </div>
     </div>
 
     <!-- 我的标注记录列表 -->
-    <div class="section-title"><i class="fas fa-table-list"></i> 我的标注记录</div>
+    <div class="section-title">我的标注记录</div>
     <div class="table-wrapper">
         <table id="annotationsTable">
             <thead>
@@ -349,10 +347,10 @@
     function showToast(message, type = 'info', duration = 4000) {
         const toast = document.createElement('div');
         toast.className = 'toast-message';
-        let iconHtml = '<i class="fas fa-info-circle"></i>';
-        if (type === 'success') iconHtml = '<i class="fas fa-check-circle"></i>';
-        if (type === 'error') iconHtml = '<i class="fas fa-circle-exclamation"></i>';
-        if (type === 'warning') iconHtml = '<i class="fas fa-exclamation-triangle"></i>';
+        let iconHtml = '';
+        if (type === 'success') iconHtml = '成功 ';
+        if (type === 'error') iconHtml = '错误 ';
+        if (type === 'warning') iconHtml = '警告 ';
         toast.innerHTML = `${iconHtml} <span>${message}</span>`;
         toast.style.borderLeftColor = type === 'success' ? '#4ade80' : (type === 'error' ? '#f87171' : '#3b82f6');
         document.body.appendChild(toast);
@@ -387,7 +385,7 @@
                 setTimeout(() => { window.location.href = 'admin.html'; }, 1200);
                 return false;
             }
-            document.getElementById('annotatorUsername').innerHTML = `<i class="fas fa-user-astronaut"></i> ${data.username}`;
+            document.getElementById('annotatorUsername').innerHTML = `${data.username}`;
             return true;
         } catch (err) {
             window.location.href = 'login.html';
@@ -439,13 +437,13 @@
             
             const editBtn = document.createElement('button');
             editBtn.className = 'icon-btn edit';
-            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.innerHTML = '';
             editBtn.title = '编辑';
             editBtn.onclick = () => editRecord(rec.id, rec.task_name, rec.duration_seconds, rec.version);
             
             const delBtn = document.createElement('button');
             delBtn.className = 'icon-btn delete';
-            delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            delBtn.innerHTML = '';
             delBtn.title = '删除';
             delBtn.onclick = () => deleteRecord(rec.id, rec.version);
             

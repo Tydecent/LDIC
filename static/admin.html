@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>管理控制台 | 视频标注系统</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>管理员面板 | 标注信息收集系统</title>
     <style>
         * {
             margin: 0;
@@ -14,96 +12,95 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at 10% 20%, #0a0f1c, #03060f);
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #0b1120;
             color: #eef2ff;
-            padding: 28px 24px;
-            min-height: 100vh;
+            padding: 24px 20px;
+            line-height: 1.4;
         }
 
         /* 容器 */
         .admin-container {
-            max-width: 1600px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
-        /* 顶部导航 */
+        /* 顶部栏 —— 极简，无外部图标 */
         .top-nav {
-            background: rgba(18, 25, 45, 0.7);
-            backdrop-filter: blur(16px);
-            border-radius: 2rem;
-            padding: 0.8rem 2rem;
+            background: rgba(18, 25, 45, 0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            border: 1px solid #2d3a5e;
+            margin-bottom: 32px;
         }
         .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
             font-weight: 700;
-            font-size: 1.3rem;
-            background: linear-gradient(135deg, #a5f3fc, #818cf8);
+            font-size: 1.25rem;
+            letter-spacing: -0.2px;
+            background: linear-gradient(135deg, #c084fc, #60a5fa);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
         .badge-admin {
             background: #8b5cf6;
-            padding: 4px 14px;
+            padding: 4px 12px;
             border-radius: 40px;
             font-size: 0.7rem;
             font-weight: 600;
-            letter-spacing: 0.3px;
         }
         .user-info {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
         }
-        .logout-btn {
+        .logout-btn, .refresh-btn {
             background: #334155;
             border: none;
-            padding: 8px 20px;
+            padding: 6px 18px;
             border-radius: 2rem;
             color: white;
             font-weight: 500;
             cursor: pointer;
             transition: 0.2s;
+            font-size: 0.85rem;
         }
         .logout-btn:hover {
             background: #ef4444;
-            transform: scale(0.96);
+        }
+        .refresh-btn:hover {
+            background: #3b82f6;
         }
 
-        /* 统计卡片 */
+        /* 统计卡片 - 无图标，纯数字卡片 */
         .stats-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 1.5rem;
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
         }
         .stat-card {
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(12px);
-            border-radius: 1.8rem;
-            padding: 1.2rem 1.8rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 1.5rem;
+            padding: 1.2rem 1.5rem;
             flex: 1;
-            min-width: 180px;
-            border: 1px solid rgba(51, 65, 85, 0.6);
-            transition: 0.2s;
+            min-width: 160px;
+            border: 1px solid #2d3a5e;
         }
         .stat-card h4 {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 500;
             color: #9ca3af;
             margin-bottom: 8px;
+            letter-spacing: 0.3px;
         }
         .stat-number {
-            font-size: 2.5rem;
+            font-size: 2.3rem;
             font-weight: 800;
             background: linear-gradient(145deg, #c084fc, #60a5fa);
             -webkit-background-clip: text;
@@ -111,95 +108,91 @@
             color: transparent;
         }
 
-        /* 通用表格样式 */
+        /* 表格区域 + 标题 */
         .section-title {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 600;
             margin: 1.8rem 0 1rem 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
             border-left: 4px solid #8b5cf6;
             padding-left: 16px;
         }
         .table-wrapper {
             overflow-x: auto;
-            border-radius: 1.5rem;
-            background: rgba(18, 25, 45, 0.5);
-            backdrop-filter: blur(4px);
+            border-radius: 1.2rem;
+            background: rgba(18, 25, 45, 0.6);
             border: 1px solid #1e293b;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
         th {
             text-align: left;
-            padding: 14px 16px;
+            padding: 12px 14px;
             background: #0f172a;
             color: #cbd5e6;
             font-weight: 600;
         }
         td {
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-bottom: 1px solid #1e293b;
             color: #e2e8f0;
         }
         tr:hover td {
-            background: #1e293b50;
+            background: #1e293b70;
         }
 
-        /* 控制选项区域 (可复用卡片组) */
-        .control-section {
-            margin: 2rem 0 2rem 0;
+        /* 控制项区域 (一行一个) */
+        .control-section, .danger-section {
+            margin: 2rem 0 1rem;
         }
-        .control-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.2rem;
-        }
-        /* 通用控制卡片样式 (方便前端增删卡片) */
-        .control-card {
-            background: rgba(12, 20, 35, 0.8);
-            backdrop-filter: blur(12px);
-            border-radius: 1.5rem;
-            padding: 1.2rem 1.5rem;
-            border: 1px solid #2d3a5e;
-            transition: all 0.2s;
+        .control-item-list {
             display: flex;
             flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
         }
-        .control-card:hover {
-            border-color: #5b6e8c;
-            transform: translateY(-2px);
+        .control-row {
+            background: rgba(12, 20, 35, 0.85);
+            border: 1px solid #2d3a5e;
+            border-radius: 1.2rem;
+            padding: 16px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            transition: 0.1s;
+        }
+        .control-info {
+            flex: 3;
+            min-width: 200px;
         }
         .control-title {
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1rem;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 0.5rem;
+            gap: 8px;
         }
         .control-desc {
             font-size: 0.8rem;
-            color: #9ca8c3;
-            margin-bottom: 1rem;
+            color: #a0aec0;
             line-height: 1.4;
         }
         .control-btn {
             background: #2d3a5e;
             border: none;
-            padding: 8px 16px;
+            padding: 8px 20px;
             border-radius: 2rem;
             color: white;
             font-weight: 500;
             cursor: pointer;
             transition: 0.2s;
-            align-self: flex-start;
-            margin-top: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            margin-left: 16px;
         }
         .control-btn.primary {
             background: #3b82f6;
@@ -213,92 +206,81 @@
         .control-btn.danger:hover {
             background: #7f1a1a;
         }
-
-        /* 危险区特殊风格 */
-        .danger-zone {
-            margin-top: 2rem;
-            background: rgba(127, 29, 29, 0.2);
-            border: 1px solid #f87171;
-            border-radius: 1.8rem;
-            padding: 1.4rem 1.8rem;
-        }
-        .danger-title {
-            font-weight: 700;
-            color: #fca5a5;
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .danger-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .danger-card {
-            background: #1e1b2e60;
-            border-left: 3px solid #ef4444;
-            border-radius: 1.2rem;
-            padding: 1rem 1.4rem;
-            flex: 1;
-            min-width: 220px;
+        .control-btn:hover {
+            transform: scale(0.98);
         }
 
-        /* 消息提示 */
+        /* 危险区独立风格 */
+        .danger-section .control-row {
+            border-left: 3px solid #f97316;
+            background: rgba(127, 29, 29, 0.15);
+        }
+
+        /* toast 提示（简约无图标库） */
         .toast-message {
             position: fixed;
             bottom: 24px;
             right: 24px;
             background: #1e293b;
-            border-left: 5px solid;
-            padding: 12px 20px;
+            border-left: 4px solid;
+            padding: 10px 18px;
             border-radius: 1rem;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            z-index: 1000;
-            animation: fadeInUp 0.2s ease;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            z-index: 1100;
             font-weight: 500;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px);}
-            to { opacity: 1; transform: translateY(0);}
+            font-size: 0.85rem;
+            max-width: 360px;
+            word-break: break-word;
+            backdrop-filter: blur(12px);
         }
         .loading-spinner {
             display: inline-block;
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             border-top-color: white;
             animation: spin 0.6s linear infinite;
-            margin-right: 8px;
+            margin-right: 6px;
+            vertical-align: middle;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        i.icon-mr { margin-right: 8px; }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .text-muted {
+            color: #8ca3b9;
+        }
+        hr {
+            border-color: #1e293b;
+            margin: 0.5rem 0;
+        }
     </style>
 </head>
 <body>
 <div class="admin-container">
-    <!-- 顶部栏 -->
+    <!-- 极简顶部栏，无第三方资源 -->
     <div class="top-nav">
-        <div class="brand"><i class="fas fa-chalkboard-user"></i> 标注管理中枢 · 管理员</div>
+        <div class="brand">管理员面板</div>
         <div class="user-info">
-            <span id="adminUsername"><i class="fas fa-user-shield"></i> 加载中...</span>
+            <span id="adminUsername">👤 加载中...</span>
             <span class="badge-admin">ROOT</span>
-            <button id="logoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</button>
+            <button id="refreshDataBtn" class="refresh-btn">⟳ 刷新数据</button>
+            <button id="logoutBtn" class="logout-btn">🚪 退出</button>
         </div>
     </div>
 
     <!-- 统计卡片 -->
     <div class="stats-grid">
-        <div class="stat-card"><h4><i class="fas fa-database"></i> 总标注记录数</h4><div class="stat-number" id="totalRecords">--</div></div>
-        <div class="stat-card"><h4><i class="fas fa-hourglass-half"></i> 总标注时长 (秒)</h4><div class="stat-number" id="totalDuration">--</div></div>
-        <div class="stat-card"><h4><i class="fas fa-users"></i> 活跃成员数</h4><div class="stat-number" id="totalUsers">--</div></div>
+        <div class="stat-card"><h4>📊 总标注记录数</h4><div class="stat-number" id="totalRecords">--</div></div>
+        <div class="stat-card"><h4>⏱️ 总标注时长 (秒)</h4><div class="stat-number" id="totalDuration">--</div></div>
+        <div class="stat-card"><h4>👥 活跃成员数</h4><div class="stat-number" id="totalUsers">--</div></div>
     </div>
 
     <!-- 所有成员列表 -->
-    <div class="section-title"><i class="fas fa-users-viewfinder"></i> 所有成员 & 统计</div>
+    <div class="section-title">👥 所有成员 & 统计</div>
     <div class="table-wrapper">
         <table id="usersTable">
             <thead>
@@ -310,8 +292,8 @@
         </table>
     </div>
 
-    <!-- 所有标注任务明细 -->
-    <div class="section-title"><i class="fas fa-tasks"></i> 全量标注任务明细</div>
+    <!-- 全量标注明细 -->
+    <div class="section-title">📌 全量标注任务明细</div>
     <div class="table-wrapper">
         <table id="allAnnotationsTable">
             <thead>
@@ -323,141 +305,48 @@
         </table>
     </div>
 
-    <!-- 服务器控制选项区域 (可复用卡片) 根据配置数组动态生成，方便增删 -->
+    <!-- 服务器控制选项：一行一个控制项（标题+描述+按钮） -->
     <div class="control-section">
-        <div class="section-title"><i class="fas fa-sliders-h"></i> 服务器控制选项</div>
-        <div id="controlCardsContainer" class="control-grid"></div>
+        <div class="section-title">⚙️ 服务器控制选项</div>
+        <div class="control-item-list" id="serverControlsContainer">
+            <!-- 静态配置 3个核心控制项：一致性检查、清理幂等键、导出报表 -->
+            <!-- 通过js绑定事件，确保api调用，同时满足一行一个的样式 -->
+        </div>
     </div>
 
-    <!-- 危险操作预留区 (危险操作均可在此扩展) -->
-    <div class="danger-zone">
-        <div class="danger-title"><i class="fas fa-skull-crossbones"></i> 危险操作区 (谨慎执行)</div>
-        <div class="danger-grid" id="dangerZoneContainer">
-            <!-- 危险操作卡片示例，后续可轻松添加 -->
+    <!-- 危险操作区 - 一行一个 -->
+    <div class="danger-section">
+        <div class="section-title">⚠️ 危险操作区 (谨慎执行)</div>
+        <div class="control-item-list" id="dangerControlsContainer">
+            <!-- 静态预留危险操作，实现一行一个样式 -->
         </div>
     </div>
 </div>
 
 <script>
-    // ======================== 配置区域 ========================
-    // API 基地址 (根据部署环境修改)
+    // ======================== 配置 ========================
+    // API 基地址 (与后端同域，或者手动指定)
     const BASE_URL = (() => {
-        // 如果当前地址是file协议或需要指定后端，请修改此处，一般与后端同域留空
         if (window.location.origin === 'file://') return 'http://localhost:5000';
-        return '';  // 同域部署时使用相对路径
+        return '';   // 同域部署
     })();
 
-    // ---------- 控制选项配置 (可复用的核心) ----------
-    // 每个选项需包含: id, title, description, buttonText, action(异步函数), isPrimaryStyle(可选)
-    // 前端程序员只需在此数组中增删对象即可在界面生成对应控制卡片
-    const CONTROL_OPTIONS = [
-        {
-            id: 'consistencyCheck',
-            title: '数据一致性检查',
-            description: '对比明细记录与分组聚合结果，检测数据库异常或不一致。',
-            buttonText: '执行检查',
-            isPrimary: true,
-            action: async () => {
-                const res = await adminFetch('/api/admin/consistency_check', { method: 'GET' });
-                if (res.status === 200) {
-                    const data = await res.json();
-                    showToast(`✅ 一致性检查通过: ${data.message || '数据一致'}`, 'success');
-                } else if (res.status === 409) {
-                    const errorData = await res.json();
-                    let issueMsg = '数据不一致:\n';
-                    if (errorData.issues) {
-                        errorData.issues.forEach(issue => {
-                            issueMsg += `用户 ${issue.username}: 分组统计 ${issue.group_count} 条，明细 ${issue.detail_count} 条\n`;
-                        });
-                    } else {
-                        issueMsg += errorData.error || '检测到不一致';
-                    }
-                    showToast(issueMsg, 'error', 6000);
-                } else {
-                    const err = await res.json();
-                    showToast(err.error || '一致性检查失败', 'error');
-                }
-            }
-        },
-        {
-            id: 'cleanupIdempotency',
-            title: '清理过期幂等键',
-            description: '手动清除24小时前的幂等键缓存，释放存储空间。',
-            buttonText: '立即清理',
-            isPrimary: false,
-            action: async () => {
-                const res = await adminFetch('/api/admin/cleanup_idempotency_keys', { method: 'POST' });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast(`✅ 清理完成，共删除 ${data.deleted_count} 条过期幂等键`, 'success');
-                } else {
-                    showToast(data.error || '清理失败', 'error');
-                }
-            }
-        },
-        {
-            id: 'exportExcel',
-            title: '导出 Excel 报表',
-            description: '生成包含“标注记录总表”和“个人统计”的 Excel 文件 (xlsx)',
-            buttonText: '下载报表',
-            isPrimary: true,
-            action: async () => {
-                // 导出操作使用新窗口打开保证下载流
-                try {
-                    // 由于是GET下载，直接打开带cookie的url
-                    window.open(`${BASE_URL}/excel`, '_blank');
-                    showToast('正在生成报表，请稍等...', 'info');
-                } catch(e) {
-                    showToast('导出失败，请检查网络', 'error');
-                }
-            }
-        }
-        // 未来添加新选项：只需追加对象，即可自动生成卡片
-        // 例如 { id: 'rebuildCache', title: '重建索引', description: '重建搜索索引', buttonText: '执行', action: async()=>{...} }
-    ];
-
-    // ---------- 危险操作配置 (独立配置，方便扩展) ----------
-    // 虽然是危险区，但同样具备名称+介绍+按钮，为了方便扩展也采用配置方式
-    const DANGER_ACTIONS = [
-        {
-            id: 'dangerResetDemo',
-            title: '⚠️ 重置模拟数据 (预留)',
-            description: '危险：将清空所有标注记录并重置为演示状态。需要后端支持。',
-            buttonText: '危险操作 (未启用)',
-            handler: async () => {
-                if(confirm('【演示】该接口尚未提供，如需要此危险操作，请联系后端团队开发。是否继续模拟？')) {
-                    showToast('当前仅为前端占位，无实际API调用', 'error');
-                }
-            }
-        },
-        {
-            id: 'dangerAuditClean',
-            title: '🗑️ 清空审计日志 (预留)',
-            description: '清空所有审计日志，无法恢复。需后端配合审计删除接口。',
-            buttonText: '申请清理 (未实现)',
-            handler: async () => {
-                showToast('未开放API，仅示意危险区扩展能力', 'error');
-            }
-        }
-    ];
-
-    // ======================== 辅助函数 ========================
-    function showToast(message, type = 'info', duration = 4000) {
+    // ---------- 辅助函数 ----------
+    function showToast(message, type = 'info', duration = 4500) {
         const toast = document.createElement('div');
         toast.className = 'toast-message';
-        let icon = 'ℹ️';
-        if (type === 'success') icon = '✅';
-        if (type === 'error') icon = '❌';
-        if (type === 'warning') icon = '⚠️';
-        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-info-circle')}"></i> ${message}`;
-        toast.style.borderLeftColor = type === 'success' ? '#4ade80' : (type === 'error' ? '#f87171' : '#3b82f6');
+        let borderColor = '#3b82f6';
+        let prefix = 'ℹ️ ';
+        if (type === 'success') { borderColor = '#22c55e'; prefix = '✅ '; }
+        if (type === 'error') { borderColor = '#ef4444'; prefix = '❌ '; }
+        if (type === 'warning') { borderColor = '#f97316'; prefix = '⚠️ '; }
+        toast.style.borderLeftColor = borderColor;
+        toast.innerHTML = `${prefix} ${message}`;
         document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.remove();
-        }, duration);
+        setTimeout(() => toast.remove(), duration);
     }
 
-    // 封装fetch，自动处理401/403跳转
+    // 封装fetch，自动处理未授权跳转
     async function adminFetch(url, options = {}) {
         const fullUrl = BASE_URL + url;
         const response = await fetch(fullUrl, {
@@ -473,7 +362,7 @@
         return response;
     }
 
-    // 加载session并校验是否为管理员
+    // 检查管理员会话
     async function checkAdminSession() {
         try {
             const resp = await fetch(`${BASE_URL}/api/session`, { credentials: 'include' });
@@ -484,7 +373,7 @@
                 setTimeout(() => { window.location.href = 'annotator.html'; }, 1000);
                 return false;
             }
-            document.getElementById('adminUsername').innerHTML = `<i class="fas fa-crown"></i> ${data.username}`;
+            document.getElementById('adminUsername').innerHTML = `👑 ${data.username}`;
             return true;
         } catch (err) {
             window.location.href = 'login.html';
@@ -492,14 +381,14 @@
         }
     }
 
-    // 加载全局汇总和用户统计、明细
+    // ---------- 加载数据接口 ----------
     async function loadSummary() {
         try {
             const res = await adminFetch('/api/admin/summary');
             const data = await res.json();
             document.getElementById('totalRecords').innerText = data.total_records ?? 0;
             document.getElementById('totalDuration').innerText = (data.total_duration_seconds ?? 0).toFixed(2);
-        } catch(e) { console.warn(e); }
+        } catch(e) { console.warn(e); showToast('获取汇总数据失败', 'error'); }
     }
 
     async function loadUserStats() {
@@ -509,7 +398,7 @@
             document.getElementById('totalUsers').innerText = users.length;
             const tbody = document.getElementById('usersTableBody');
             tbody.innerHTML = '';
-            if (users.length === 0) {
+            if (!users.length) {
                 tbody.innerHTML = '<tr><td colspan="4">暂无成员数据</td></tr>';
                 return;
             }
@@ -517,10 +406,10 @@
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = user.username;
                 row.insertCell(1).innerText = user.role === 'admin' ? '管理员' : '标注员';
-                row.insertCell(2).innerText = user.annotation_count;
+                row.insertCell(2).innerText = user.annotation_count ?? 0;
                 row.insertCell(3).innerText = (user.total_duration_seconds || 0).toFixed(2);
             });
-        } catch(e) { showToast('加载用户统计失败', 'error'); }
+        } catch(e) { showToast('加载成员统计失败', 'error'); }
     }
 
     async function loadAllAnnotations() {
@@ -529,7 +418,7 @@
             const records = await res.json();
             const tbody = document.getElementById('annotationsTableBody');
             tbody.innerHTML = '';
-            if (records.length === 0) {
+            if (!records.length) {
                 tbody.innerHTML = '<tr><td colspan="6">暂无标注记录</td></tr>';
                 return;
             }
@@ -537,39 +426,146 @@
                 const row = tbody.insertRow();
                 row.insertCell(0).innerText = rec.id;
                 row.insertCell(1).innerText = rec.username;
-                row.insertCell(2).innerText = rec.task_name;
+                row.insertCell(2).innerText = rec.task_name || '-';
                 row.insertCell(3).innerText = rec.duration_seconds;
-                row.insertCell(4).innerText = rec.created_at;
-                row.insertCell(5).innerText = rec.version;
+                row.insertCell(4).innerText = rec.created_at || '-';
+                row.insertCell(5).innerText = rec.version || 'v1';
             });
         } catch(e) { showToast('加载标注明细失败', 'error'); }
     }
 
-    // 刷新所有数据 (汇总，成员，明细)
     async function refreshAllData() {
         await Promise.all([loadSummary(), loadUserStats(), loadAllAnnotations()]);
+        showToast('数据已刷新', 'success', 2000);
     }
 
-    // 渲染控制卡片 (可复用样式)
-    function renderControlCards() {
-        const container = document.getElementById('controlCardsContainer');
+    // ---------- 控制项核心动作 ----------
+    // 1. 一致性检查
+    async function actionConsistencyCheck(btn) {
+        const res = await adminFetch('/api/admin/consistency_check', { method: 'GET' });
+        if (res.status === 200) {
+            const data = await res.json();
+            showToast(`✅ 一致性检查通过: ${data.message || '数据一致'}`, 'success');
+        } else if (res.status === 409) {
+            const errorData = await res.json();
+            let issueMsg = '数据不一致:\n';
+            if (errorData.issues && errorData.issues.length) {
+                errorData.issues.forEach(issue => {
+                    issueMsg += `用户 ${issue.username}: 分组统计 ${issue.group_count} 条，明细 ${issue.detail_count} 条\n`;
+                });
+                showToast(issueMsg, 'error', 8000);
+            } else {
+                showToast(errorData.error || '检测到不一致', 'error');
+            }
+        } else {
+            const err = await res.json();
+            showToast(err.error || '一致性检查失败', 'error');
+        }
+    }
+
+    // 2. 清理过期幂等键
+    async function actionCleanIdempotency(btn) {
+        const res = await adminFetch('/api/admin/cleanup_idempotency_keys', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(`✅ 清理完成，共删除 ${data.deleted_count} 条过期幂等键`, 'success');
+        } else {
+            showToast(data.error || '清理失败', 'error');
+        }
+    }
+
+    // 3. 导出 Excel
+    async function actionExportExcel(btn) {
+        try {
+            window.open(`${BASE_URL}/excel`, '_blank');
+            showToast('正在生成报表，请稍等...', 'info', 3000);
+        } catch(e) {
+            showToast('导出失败，请检查网络', 'error');
+        }
+    }
+
+    // ---------- 危险区预留动作 (仅示意) ----------
+    async function dangerResetDemo(btn) {
+        if(confirm('【危险】重置模拟数据 (演示功能) 当前接口未开放，请确认仅作示意？')) {
+            showToast('当前为演示占位，无实际API调用。如需要此危险操作，请后端开发对应接口。', 'warning', 5000);
+        }
+    }
+    async function dangerAuditClean(btn) {
+        if(confirm('【危险】清空审计日志 (演示预留) 无法恢复，是否继续？')) {
+            showToast('未开放API，仅示意危险区扩展能力。', 'error', 4000);
+        }
+    }
+
+    // ========== 动态生成控制项（一行一个，无外部图标库） ==========
+    // 服务器控制项配置 (id, 标题, 描述, 按钮文字, 动作, 是否为primary样式)
+    const serverControls = [
+        {
+            id: 'consistency',
+            title: '🔍 数据一致性检查',
+            description: '对比明细记录与分组聚合结果，检测数据库异常或不一致。',
+            buttonText: '执行检查',
+            primary: true,
+            action: actionConsistencyCheck
+        },
+        {
+            id: 'cleanup',
+            title: '🧹 清理过期幂等键',
+            description: '手动清除24小时前的幂等键缓存，释放存储空间。',
+            buttonText: '立即清理',
+            primary: false,
+            action: actionCleanIdempotency
+        },
+        {
+            id: 'export',
+            title: '📎 导出 Excel 报表',
+            description: '生成包含标注记录总表和个人统计的 Excel 文件 (xlsx)',
+            buttonText: '下载报表',
+            primary: true,
+            action: actionExportExcel
+        }
+    ];
+
+    // 危险操作配置 ( 一行一个 )
+    const dangerControls = [
+        {
+            id: 'dangerReset',
+            title: '⚠️ 重置模拟数据 (预留)',
+            description: '危险：将清空所有标注记录并重置为演示状态。需要后端支持。',
+            buttonText: '危险操作 (未启用)',
+            action: dangerResetDemo
+        },
+        {
+            id: 'dangerAudit',
+            title: '🗑️ 清空审计日志 (预留)',
+            description: '清空所有审计日志，无法恢复。需后端配合审计删除接口。',
+            buttonText: '申请清理 (未实现)',
+            action: dangerAuditClean
+        }
+    ];
+
+    // 渲染服务器控制区
+    function renderServerControls() {
+        const container = document.getElementById('serverControlsContainer');
+        if (!container) return;
         container.innerHTML = '';
-        for (const opt of CONTROL_OPTIONS) {
-            const card = document.createElement('div');
-            card.className = 'control-card';
-            card.innerHTML = `
-                <div class="control-title"><i class="fas ${getIconForOption(opt.id)}"></i> ${escapeHtml(opt.title)}</div>
-                <div class="control-desc">${escapeHtml(opt.description)}</div>
-                <button class="control-btn ${opt.isPrimary ? 'primary' : ''}" data-id="${opt.id}">${escapeHtml(opt.buttonText)}</button>
+        for (const ctrl of serverControls) {
+            const row = document.createElement('div');
+            row.className = 'control-row';
+            row.innerHTML = `
+                <div class="control-info">
+                    <div class="control-title">${escapeHtml(ctrl.title)}</div>
+                    <div class="control-desc">${escapeHtml(ctrl.description)}</div>
+                </div>
+                <button class="control-btn ${ctrl.primary ? 'primary' : ''}" data-id="${ctrl.id}">${escapeHtml(ctrl.buttonText)}</button>
             `;
-            const btn = card.querySelector('button');
+            const btn = row.querySelector('button');
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const originalText = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = '<span class="loading-spinner"></span> 执行中...';
                 try {
-                    await opt.action();
+                    await ctrl.action(btn);
                 } catch (err) {
                     console.error(err);
                     showToast(`操作失败: ${err.message || '未知错误'}`, 'error');
@@ -578,52 +574,43 @@
                     btn.innerHTML = originalText;
                 }
             });
-            container.appendChild(card);
+            container.appendChild(row);
         }
     }
 
-    // 渲染危险操作区 (同样展示名称+描述+按钮，可复用样式)
-    function renderDangerZone() {
-        const container = document.getElementById('dangerZoneContainer');
+    // 渲染危险操作区
+    function renderDangerControls() {
+        const container = document.getElementById('dangerControlsContainer');
+        if (!container) return;
         container.innerHTML = '';
-        for (const danger of DANGER_ACTIONS) {
-            const card = document.createElement('div');
-            card.className = 'danger-card';
-            card.style.background = '#2d1b2e60';
-            card.innerHTML = `
-                <div style="font-weight:700; margin-bottom:6px;"><i class="fas fa-exclamation-triangle"></i> ${escapeHtml(danger.title)}</div>
-                <div style="font-size:0.75rem; color:#e2e8f0; margin-bottom:12px;">${escapeHtml(danger.description)}</div>
+        for (const danger of dangerControls) {
+            const row = document.createElement('div');
+            row.className = 'control-row';
+            row.innerHTML = `
+                <div class="control-info">
+                    <div class="control-title">${escapeHtml(danger.title)}</div>
+                    <div class="control-desc">${escapeHtml(danger.description)}</div>
+                </div>
                 <button class="control-btn danger" data-danger="${danger.id}">${escapeHtml(danger.buttonText)}</button>
             `;
-            const btn = card.querySelector('button');
-            btn.addEventListener('click', async () => {
-                if (confirm(`⚠️ 危险操作: ${danger.title}\n请确认是否继续？`)) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="loading-spinner"></span> 处理中...';
-                    try {
-                        await danger.handler();
-                    } catch (e) { showToast(`错误: ${e.message}`, 'error'); }
-                    finally {
-                        btn.disabled = false;
-                        btn.innerHTML = danger.buttonText;
-                    }
+            const btn = row.querySelector('button');
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                if (!confirm(`⚠️ 危险操作: ${danger.title}\n请确认是否继续？`)) return;
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading-spinner"></span> 处理中...';
+                try {
+                    await danger.action(btn);
+                } catch (err) {
+                    showToast(`错误: ${err.message}`, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
                 }
             });
-            container.appendChild(card);
+            container.appendChild(row);
         }
-        // 如果危险区为空，显示占位提示
-        if (DANGER_ACTIONS.length === 0) {
-            container.innerHTML = '<div style="padding:1rem; color:#aaa">暂无危险操作配置，可在DANGER_ACTIONS中添加</div>';
-        }
-    }
-
-    function getIconForOption(id) {
-        const map = {
-            consistencyCheck: 'fa-check-double',
-            cleanupIdempotency: 'fa-broom',
-            exportExcel: 'fa-file-excel'
-        };
-        return map[id] || 'fa-plug';
     }
 
     function escapeHtml(str) {
@@ -636,7 +623,7 @@
         });
     }
 
-    // 登出逻辑
+    // 退出登录
     async function logout() {
         try {
             await fetch(`${BASE_URL}/api/logout`, { method: 'POST', credentials: 'include' });
@@ -644,18 +631,37 @@
         window.location.href = 'login.html';
     }
 
-    // 页面初始化
+    // 初始化页面
     (async function init() {
         const isAdmin = await checkAdminSession();
         if (!isAdmin) return;
+
         // 加载数据
         await refreshAllData();
-        // 渲染可复用的控制选项区域
-        renderControlCards();
-        // 渲染危险操作区
-        renderDangerZone();
-        // 绑定登出
-        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        // 渲染服务器控制选项（一行一个）
+        renderServerControls();
+        // 渲染危险操作区（一行一个）
+        renderDangerControls();
+
+        // 绑定顶部刷新按钮
+        const refreshBtn = document.getElementById('refreshDataBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '<span class="loading-spinner"></span> 刷新中...';
+                try {
+                    await refreshAllData();
+                } finally {
+                    refreshBtn.disabled = false;
+                    refreshBtn.innerHTML = '⟳ 刷新数据';
+                }
+            });
+        }
+
+        // 退出按钮
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
     })();
 </script>
 </body>
