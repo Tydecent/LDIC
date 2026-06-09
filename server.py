@@ -162,9 +162,18 @@ def idempotent(expire_seconds=86400):
                 # ----- 执行业务逻辑 -----
                 resp = f(*args, **kwargs)
 
-                # 缓存成功响应
-                if resp.status_code == 201 and resp.is_json:
-                    response_data = resp.get_json()
+                # 标准化响应：处理可能的元组返回值
+                if isinstance(resp, tuple):
+                    # resp 形式：(response, status, headers)
+                    response_obj = resp[0] if isinstance(resp[0], Response) else make_response(resp[0])
+                    status_code = resp[1] if len(resp) > 1 else response_obj.status_code
+                else:
+                    response_obj = resp if isinstance(resp, Response) else make_response(resp)
+                    status_code = response_obj.status_code
+
+                # 缓存成功响应（状态码 201 且内容是 JSON）
+                if status_code == 201 and response_obj.is_json:
+                    response_data = response_obj.get_json()
                     new_idem = IdempotencyKey(
                         key=idem_key,
                         response=response_data,
@@ -172,6 +181,8 @@ def idempotent(expire_seconds=86400):
                     )
                     db.session.add(new_idem)
                     db.session.commit()
+
+                # 注意：仍然返回原始的 resp，保持视图原有的返回格式不变
                 return resp
             finally:
                 # 释放 advisory lock
