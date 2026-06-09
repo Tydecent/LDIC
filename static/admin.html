@@ -510,7 +510,7 @@
         {
             id: 'cleanup',
             title: '🧹 清理过期幂等键',
-            description: '手动清除24小时前的幂等键缓存，释放存储空间。',
+            description: '我们使用幂等键技术来确保用户多次执行同一操作的结果与执行一次完全一致。由于过期后的键不再参与幂等判断，清理过期幂等键以释放存储空间。',
             buttonText: '立即清理',
             primary: false,
             action: actionCleanIdempotency

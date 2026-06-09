@@ -18,7 +18,7 @@ app.secret_key = 'your-secret-key-change-in-production'  # 生产环境请更换
 # ---------- PostgreSQL 数据库配置 ----------
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
-    DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/annotations_db'
+    DATABASE_URL = 'postgresql://postgres:20260609@localhost:5432/annotations_db'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
