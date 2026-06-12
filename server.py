@@ -9,8 +9,8 @@ from flask import Flask, request, jsonify, session, send_from_directory, send_fi
 from flask_sqlalchemy import SQLAlchemy
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
-from sqlalchemy import func, event
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy import func
+from sqlalchemy.exc import OperationalError
 import threading
 import time
 
